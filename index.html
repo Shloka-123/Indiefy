@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Indiefy</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@800&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+
+body{
+margin:0;
+font-family:Poppins;
+background:#faf6f2;
+color:#3a2b21;
+}
+
+/* NAV */
+
+nav{
+display:flex;
+justify-content:flex-end;
+padding:25px 8%;
+}
+
+nav a{
+text-decoration:none;
+margin-left:30px;
+font-weight:500;
+color:#5c3b28;
+}
+
+/* HERO */
+
+.hero{
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+text-align:center;
+padding:140px 20px 80px;
+}
+
+/* BIG LOGO */
+
+.logo{
+font-family:'Playfair Display',serif;
+font-size:110px;
+letter-spacing:4px;
+margin-bottom:10px;
+color:#4b2e1e;
+}
+
+/* TAGLINE */
+
+.tagline{
+font-size:20px;
+opacity:.7;
+margin-bottom:35px;
+}
+
+/* BUTTON */
+
+.btn{
+background:#5c3b28;
+color:white;
+padding:14px 30px;
+border-radius:30px;
+text-decoration:none;
+font-weight:500;
+}
+
+.btn:hover{
+background:#3f281c;
+}
+
+/* SECTION */
+
+.section{
+padding:70px 8%;
+}
+
+.section h2{
+font-size:28px;
+margin-bottom:35px;
+text-align:center;
+}
+
+/* GRID */
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+gap:30px;
+}
+
+/* CARD */
+
+.card{
+background:white;
+border-radius:14px;
+overflow:hidden;
+box-shadow:0 10px 25px rgba(0,0,0,0.08);
+cursor:pointer;
+transition:.25s;
+}
+
+.card:hover{
+transform:translateY(-8px);
+}
+
+.card img{
+width:100%;
+height:220px;
+object-fit:cover;
+}
+
+.card-body{
+padding:16px;
+}
+
+.title{
+font-weight:600;
+}
+
+.artist{
+font-size:14px;
+opacity:.6;
+}
+
+footer{
+text-align:center;
+padding:40px;
+opacity:.6;
+}
+
+</style>
+</head>
+
+<body>
+
+<nav>
+<a href="index.html">Home</a>
+<a href="songs.html">Discover</a>
+</nav>
+
+<section class="hero">
+
+<div class="logo">Indiefy</div>
+
+<div class="tagline">
+Discover India's indie sound
+</div>
+
+<a class="btn" href="songs.html">
+Explore Music
+</a>
+
+</section>
+
+<section class="section">
+
+<h2>Trending Indie</h2>
+
+<div id="songsGrid" class="grid"></div>
+
+</section>
+
+<footer>
+Made with chai ☕ and indie vibes
+</footer>
+
+<script>
+
+async function loadSongs(){
+
+const res=await fetch("http://localhost:3000/songs");
+const songs=await res.json();
+
+const grid=document.getElementById("songsGrid");
+
+songs.slice(0,6).forEach(song=>{
+
+const card=document.createElement("div");
+card.className="card";
+
+card.innerHTML=`
+
+<img src="${song.cover_url}">
+
+<div class="card-body">
+
+<div class="title">${song.title}</div>
+<div class="artist">${song.artist}</div>
+
+</div>
+`;
+
+card.onclick=()=>{
+window.open(song.spotify_url,"_blank")
+}
+
+grid.appendChild(card)
+
+})
+
+}
+
+loadSongs()
+
+</script>
+
+</body>
+</html>
