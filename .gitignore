@@ -1,0 +1,25 @@
+# Database (changes constantly, don't track)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Environment secrets
+.env
+.env.local
+.env.*.local
+
+# Node
+node_modules/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+*.log
+
+# Old backups / scratch files
+backup.html
+test.html
+test-backup.html
+!.gitignore

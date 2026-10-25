@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>INDIEFY</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden}
+body{font-family:'DM Sans',sans-serif}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(196,163,90,0.4);border-radius:2px}
+nav{position:fixed;top:0;left:0;right:0;z-index:2000;display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem;height:60px;transition:background 0.4s ease}
+.nav-logo{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:2.2rem;letter-spacing:0.1em;line-height:1}
+.nav-tabs{display:flex;gap:2px;padding:3px;border-radius:100px}
+.nav-tab{padding:5px 20px;border-radius:100px;font-size:0.75rem;font-weight:500;letter-spacing:0.06em;cursor:pointer;border:none;background:transparent;transition:all 0.28s;font-family:'DM Sans',sans-serif}
+.section{display:none;position:fixed;inset:0;top:60px}
+.section.active{display:block}
+
+/* SKY */
+#sky{overflow:hidden;background:#050408}
+#sky-canvas{position:absolute;inset:0;width:100%;height:100%}
+.sky-nav{background:#050408;border-bottom:1px solid rgba(205,159,160,0.12);box-shadow:0 4px 30px rgba(0,0,0,0.8)}
+.sky-nav .nav-logo{color:#F8CCAA;text-shadow:0 0 12px rgba(248,204,170,0.4)}
+.sky-nav .nav-tabs{background:rgba(82,88,113,0.18);border:1px solid rgba(133,124,145,0.25)}
+.sky-nav .nav-tab{color:rgba(242,193,163,0.45)}
+.sky-nav .nav-tab:hover{color:#F2C1A3}
+.sky-nav .nav-tab.active{background:#CD9FA0;color:#2A1F2A;box-shadow:0 0 12px rgba(205,159,160,0.35)}
+
+.song-dot{position:absolute;border-radius:50%;cursor:pointer;transform:translate(-50%,-50%);background:rgba(248,204,170,0.75);transition:transform 0.3s,box-shadow 0.3s,background 0.3s;z-index:3}
+.song-dot::before{content:'';position:absolute;inset:-14px;border-radius:50%}
+.song-dot.lit{transform:translate(-50%,-50%) scale(3.2);background:#F2C1A3;box-shadow:0 0 12px 4px rgba(205,159,160,0.6),0 0 36px 14px rgba(205,159,160,0.18)}
+
+.song-card{position:fixed;z-index:5000;width:224px;border-radius:18px;padding:1rem;opacity:0;pointer-events:none;transform:scale(0.9) translateY(8px);transition:opacity 0.18s,transform 0.18s;background:rgba(15,12,22,0.88);backdrop-filter:blur(28px);border:1px solid rgba(205,159,160,0.25)}
+.song-card.show{opacity:1;transform:scale(1) translateY(0);pointer-events:all}
+.sc-cover{width:100%;aspect-ratio:1;border-radius:11px;overflow:hidden;margin-bottom:0.75rem;background:#2A1F2A}
+.sc-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.sc-title{font-family:'Cormorant Garamond',serif;font-size:1.05rem;color:#F8CCAA;line-height:1.3}
+.sc-artist{font-size:0.7rem;color:rgba(242,193,163,0.55);margin-top:3px}
+.sc-year{font-size:0.6rem;color:rgba(205,159,160,0.4);margin-top:2px;font-family:'DM Mono',monospace}
+.sc-prev-wrap{margin-top:0.7rem;background:rgba(82,88,113,0.18);border:1px solid rgba(133,124,145,0.2);border-radius:8px;padding:8px}
+.sc-prev-lbl{font-size:0.6rem;color:rgba(205,159,160,0.5);letter-spacing:0.1em;margin-bottom:5px;display:flex;justify-content:space-between}
+.sc-pbar{height:2px;background:rgba(255,255,255,0.07);border-radius:2px;cursor:pointer;margin-bottom:6px}
+.sc-pfill{height:100%;background:#CD9FA0;border-radius:2px;width:0%}
+.sc-prev-btn{width:100%;padding:5px;border-radius:6px;font-size:0.64rem;background:rgba(205,159,160,0.15);border:1px solid rgba(205,159,160,0.3);color:#F2C1A3;cursor:pointer;font-family:'DM Sans',sans-serif}
+.sc-prev-btn:hover{background:rgba(205,159,160,0.28)}
+.sc-btns{display:flex;gap:5px;margin-top:6px}
+.sc-btn{flex:1;padding:6px 2px;border-radius:7px;font-size:0.64rem;font-family:'DM Sans',sans-serif;cursor:pointer;border:1px solid;transition:all 0.2s;text-align:center}
+.sc-save{background:rgba(248,204,170,0.1);border-color:rgba(248,204,170,0.3);color:#F8CCAA}
+.sc-save:hover{background:rgba(248,204,170,0.22)}
+.sc-spotify{background:rgba(30,215,96,0.08);border-color:rgba(30,215,96,0.28);color:#1ED760}
+.sc-spotify:hover{background:rgba(30,215,96,0.18)}
+
+/* LIBRARY */
+#library{overflow-y:auto;background:radial-gradient(ellipse at 50% 0%,#2A1A0A 0%,#180E06 40%,#0E0804 100%)}
+.lib-nav{background:#120A04;border-bottom:1px solid rgba(194,109,83,0.15);box-shadow:0 4px 30px rgba(0,0,0,0.8)}
+.lib-nav .nav-logo{color:#F7F1E6}
+.lib-nav .nav-tabs{background:rgba(30,18,10,0.8);border:1px solid rgba(194,109,83,0.2)}
+.lib-nav .nav-tab{color:rgba(247,241,230,0.38)}
+.lib-nav .nav-tab:hover{color:#F7F1E6}
+.lib-nav .nav-tab.active{background:#C26D53;color:#F7F1E6}
+
+.lib-hdr{position:sticky;top:0;z-index:100;background:linear-gradient(180deg,#1A0E06,#2A1608 70%,rgba(26,14,6,0.97));border-bottom:1px solid rgba(194,109,83,0.12);padding:14px 0 12px;display:flex;align-items:center;justify-content:center;gap:28px}
+.lib-candle{display:flex;flex-direction:column;align-items:center}
+.lib-flame{width:7px;height:12px;background:radial-gradient(ellipse at 50% 80%,#FFF8B0,#FFA010,rgba(255,60,0,0));border-radius:50% 50% 30% 30%;animation:flicker 1.4s ease-in-out infinite alternate}
+@keyframes flicker{0%{transform:scaleX(1);opacity:0.9}100%{transform:scaleX(0.75) scaleY(1.1);opacity:1}}
+.lib-cbody{width:9px;height:32px;background:linear-gradient(180deg,#F4ECD8,#D8C8A0);border-radius:2px}
+.lib-cbase{width:16px;height:5px;background:#8B6F47;border-radius:2px}
+.lib-title h2{font-family:'Cormorant Garamond',serif;font-size:1.8rem;color:#F7F1E6;letter-spacing:0.2em;font-weight:300;text-align:center}
+.lib-title p{font-size:0.6rem;color:rgba(194,109,83,0.4);letter-spacing:0.22em;text-transform:uppercase;margin-top:2px;text-align:center}
+
+.tt-zone{position:sticky;top:0;z-index:90;display:flex;justify-content:center;padding:20px;background:linear-gradient(180deg,#1A0E06 0%,rgba(42,22,8,0.95) 60%,rgba(26,14,6,0.85) 100%);border-bottom:1px solid rgba(194,109,83,0.12);box-shadow:0 8px 30px rgba(0,0,0,0.6)}
+.turntable{width:300px;background:linear-gradient(145deg,#1C1008,#140C06,#181008);border-radius:18px;border:1px solid rgba(194,109,83,0.14);box-shadow:0 0 0 1px #000,0 28px 90px rgba(0,0,0,0.9),inset 0 1px 0 rgba(247,241,230,0.04);overflow:hidden;position:relative;transition:box-shadow 0.25s,transform 0.25s}
+body.is-dragging .turntable{box-shadow:0 0 0 3px #C26D53,0 0 40px 10px rgba(194,109,83,0.5),0 28px 90px rgba(0,0,0,0.9);transform:scale(1.03)}
+body.is-dragging .turntable.hl{box-shadow:0 0 0 4px #F2C1A3,0 0 60px 20px rgba(242,193,163,0.7),0 28px 90px rgba(0,0,0,0.9);transform:scale(1.06)}
+
+.tt-body{padding:18px 22px 16px;background:repeating-linear-gradient(87deg,transparent,transparent 3px,rgba(255,255,255,0.006) 3px,rgba(255,255,255,0.006) 4px),linear-gradient(145deg,#1C1008,#140C06)}
+.tt-brand{text-align:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(194,109,83,0.07)}
+.tt-brand span{font-size:0.52rem;letter-spacing:0.25em;text-transform:uppercase;color:rgba(194,109,83,0.3)}
+.tt-pz{display:flex;justify-content:center;margin-bottom:12px;position:relative}
+.tt-platter{width:192px;height:192px;border-radius:50%;position:relative;background:repeating-radial-gradient(circle at 50% 50%,#0C0C0C 0px,#0C0C0C 3px,#161616 3px,#161616 4px,#0C0C0C 4px,#0C0C0C 7px,#161616 7px,#161616 8px);box-shadow:0 0 0 4px #080808,0 0 0 5px rgba(194,109,83,0.06),0 10px 50px rgba(0,0,0,0.98),inset 0 0 40px rgba(0,0,0,0.8);animation:vspin 3.8s linear infinite paused}
+.tt-platter.on{animation-play-state:running}
+@keyframes vspin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.tt-clabel{position:absolute;width:72px;height:72px;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);overflow:hidden;box-shadow:0 0 0 2px #1A1A1A,0 0 0 3px rgba(194,109,83,0.12),0 3px 10px rgba(0,0,0,0.9);background:#100806}
+.tt-clabel img{width:100%;height:100%;object-fit:cover;display:block}
+.tt-clabel-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:rgba(194,109,83,0.25);background:radial-gradient(circle,#221408,#0C0604)}
+.tt-spindle{position:absolute;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#AAA,#444);top:50%;left:50%;transform:translate(-50%,-50%);z-index:4;box-shadow:0 1px 4px rgba(0,0,0,0.9)}
+.tt-platter::after{content:'';position:absolute;inset:0;border-radius:50%;background:linear-gradient(135deg,rgba(255,255,255,0.05) 0%,transparent 45%);pointer-events:none}
+.tt-arm{position:absolute;right:10px;top:8px;width:78px;height:116px;transform-origin:top right;transition:transform 1s cubic-bezier(0.4,0,0.2,1)}
+.tt-arm.on{transform:rotate(-22deg)}
+.tt-pivot{position:absolute;top:0;right:0;width:17px;height:17px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#D4A35A,#8B6F47,#5B3C20);box-shadow:0 2px 8px rgba(0,0,0,0.9),inset 0 1px 0 rgba(255,255,255,0.12)}
+.tt-arm-tube{position:absolute;top:8px;right:9px;width:3px;height:104px;background:linear-gradient(180deg,#B09070,#806040,#604828);border-radius:2px;transform:rotate(-8deg);transform-origin:top center;box-shadow:1px 0 5px rgba(0,0,0,0.7)}
+.tt-arm-head{position:absolute;bottom:-2px;left:-10px;width:23px;height:10px;background:linear-gradient(135deg,#8B6F47,#5B3C20);border-radius:3px}
+.tt-arm-needle{position:absolute;bottom:-5px;left:11px;width:1px;height:7px;background:#C4A35A}
+.tt-meta{text-align:center;margin-bottom:10px}
+.tt-song{font-family:'Cormorant Garamond',serif;color:#F7F1E6;font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt-art{font-size:0.66rem;color:rgba(143,161,178,0.45);margin-top:1px}
+.tt-ctrl{display:flex;align-items:center;justify-content:center;gap:8px}
+.ttb{border-radius:50%;color:#C26D53;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;background:rgba(194,109,83,0.07);border:1px solid rgba(194,109,83,0.18)}
+.ttb:hover{background:rgba(194,109,83,0.18);transform:scale(1.05)}
+.ttb.sm{width:36px;height:36px;font-size:0.85rem}
+.ttb.lg{width:52px;height:52px;font-size:1.05rem;background:radial-gradient(circle,rgba(194,109,83,0.2),rgba(194,109,83,0.06));border-color:rgba(194,109,83,0.28)}
+.tt-prog{display:flex;align-items:center;gap:7px;margin-top:10px}
+.tt-tm{font-family:'DM Mono',monospace;font-size:0.56rem;color:rgba(143,161,178,0.42);min-width:25px}
+.tt-bar{flex:1;height:3px;background:rgba(255,255,255,0.06);border-radius:3px;cursor:pointer}
+.tt-fill{height:100%;background:linear-gradient(90deg,#8FA1B2,#C26D53);border-radius:3px;width:0%}
+.tt-badge{font-size:0.54rem;color:rgba(78,90,70,0.5);text-align:center;letter-spacing:0.1em;opacity:0;transition:opacity 0.3s;margin-top:5px}
+.tt-badge.on{opacity:1}
+.tt-actions{display:flex;gap:5px;margin-top:9px;padding-top:9px;border-top:1px solid rgba(194,109,83,0.07)}
+.tt-ab{flex:1;padding:8px 4px;border-radius:8px;font-size:0.62rem;font-family:'DM Sans',sans-serif;cursor:pointer;border:1px solid;transition:all 0.2s;text-align:center}
+.tt-ab.save{background:rgba(247,241,230,0.05);border-color:rgba(247,241,230,0.14);color:rgba(247,241,230,0.65)}
+.tt-ab.save:hover{background:rgba(247,241,230,0.1)}
+.tt-ab.spot{background:rgba(30,215,96,0.07);border-color:rgba(30,215,96,0.2);color:#1ED760;display:none}
+.tt-ab.spot.on{display:block}
+.tt-ab.spot:hover{background:rgba(30,215,96,0.14)}
+
+.shelf-wrap{width:min(1160px,99vw);margin:0 auto;padding-top:10px}
+.shelf-arch{background:linear-gradient(180deg,#1C1008,#2A1A0A);padding:8px 20px 6px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(194,109,83,0.08)}
+.shelf-arch-label{font-size:0.52rem;letter-spacing:0.22em;text-transform:uppercase;color:rgba(194,109,83,0.22);font-family:'DM Mono',monospace}
+.shelf-container{background:linear-gradient(180deg,#1A0E06,#120A04);border:1px solid rgba(194,109,83,0.07);border-top:none;border-radius:0 0 12px 12px;overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,0.75)}
+.shelf-rail{width:100%;height:26px;background:linear-gradient(180deg,#0A0604,#160E06);border-top:2px solid rgba(194,109,83,0.09);border-bottom:2px solid rgba(194,109,83,0.09);position:relative;overflow:hidden}
+.shelf-rail-bar{position:absolute;top:50%;left:0;right:0;height:2px;transform:translateY(-50%);background:linear-gradient(90deg,transparent,rgba(139,111,71,0.35),rgba(139,111,71,0.55),rgba(139,111,71,0.35),transparent)}
+.shelf-rail-post{position:absolute;width:3px;height:100%;background:linear-gradient(180deg,#6B4F30,#3A2010)}
+.shelf-rail-label{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:0.48rem;letter-spacing:0.2em;color:rgba(194,109,83,0.2);font-family:'DM Mono',monospace;text-transform:uppercase}
+.s-row{display:flex;align-items:flex-end;padding:10px 20px 0;border-bottom:8px solid #060402;position:relative;min-height:128px;overflow:visible;gap:3px}
+.s-row::before{content:'';position:absolute;top:0;left:0;right:0;height:24px;background:linear-gradient(180deg,rgba(194,109,83,0.05),transparent);pointer-events:none}
+.s-row::after{content:'';position:absolute;bottom:-12px;left:0;right:0;height:12px;background:linear-gradient(180deg,#4A2810 0%,#341C0A 50%,#200E04 100%);box-shadow:0 6px 20px rgba(0,0,0,0.7);border-radius:0 0 4px 4px}
+.s-col{width:20px;flex-shrink:0;align-self:stretch;background:linear-gradient(90deg,#241408,#3A2010,#2C1808);box-shadow:inset -3px 0 8px rgba(0,0,0,0.5),2px 0 5px rgba(0,0,0,0.6)}
+.s-item{flex-shrink:0;transition:transform 0.32s cubic-bezier(0.34,1.56,0.64,1);transform-origin:bottom center;position:relative;cursor:pointer}
+.s-item:hover{transform:translateY(-18px);z-index:30}
+.album-spine{position:relative;overflow:hidden;cursor:grab;border-radius:2px 3px 3px 2px;box-shadow:4px 0 16px rgba(0,0,0,0.85),-2px 0 4px rgba(0,0,0,0.5),inset 2px 0 4px rgba(255,255,255,0.04),inset -2px 0 6px rgba(0,0,0,0.3)}
+.album-spine:active{cursor:grabbing}
+.album-spine img{display:block;object-fit:cover;width:68px;pointer-events:none;-webkit-user-drag:none;user-select:none}
+.album-spine::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px;background:linear-gradient(90deg,rgba(255,255,255,0.09),transparent);pointer-events:none;z-index:2}
+.album-spine::after{content:'';position:absolute;top:0;right:0;bottom:0;width:5px;background:linear-gradient(90deg,transparent,rgba(0,0,0,0.4));pointer-events:none;z-index:2}
+.album-tip{position:absolute;bottom:calc(100%+12px);left:50%;transform:translateX(-50%);background:rgba(6,4,10,0.97);border:1px solid rgba(194,109,83,0.18);border-radius:8px;padding:6px 10px;white-space:nowrap;font-size:0.64rem;color:#F7F1E6;opacity:0;pointer-events:none;transition:opacity 0.15s;z-index:200;text-align:center}
+.album-tip span{display:block;font-size:0.56rem;color:rgba(143,161,178,0.55);margin-top:1px}
+.album-spine:hover .album-tip{opacity:1}
+.book-s{border-radius:2px 4px 4px 2px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px;box-shadow:inset -4px 0 6px rgba(0,0,0,0.45),3px 0 6px rgba(0,0,0,0.6),inset 2px 0 3px rgba(255,255,255,0.04)}
+.book-s span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:5px;color:rgba(255,255,255,0.18);font-family:'DM Mono',monospace;white-space:nowrap;overflow:hidden;max-height:76%}
+.dec-item{font-size:1rem;display:flex;align-items:flex-end;padding-bottom:2px;cursor:default;user-select:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5))}
+.drag-ghost{position:fixed;z-index:9999;pointer-events:none;width:72px;height:72px;border-radius:4px;overflow:hidden;opacity:0;transform:translate(-50%,-50%) rotate(4deg) scale(1.1);box-shadow:0 14px 48px rgba(0,0,0,0.9);transition:opacity 0.08s}
+.drag-ghost.on{opacity:0.96}
+.drag-ghost img{width:100%;height:100%;object-fit:cover;display:block}
+
+.lib-saved-shelf{position:sticky;bottom:0;z-index:50;background:linear-gradient(180deg,rgba(10,6,4,0.9),#0A0604);backdrop-filter:blur(12px);border-top:1px solid rgba(194,109,83,0.12);padding:10px 20px 12px}
+.lib-saved-title{font-size:0.56rem;letter-spacing:0.2em;color:rgba(194,109,83,0.35);text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:8px}
+.lib-saved-vinyls{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;min-height:50px}
+.lib-vinyl-saved{width:46px;height:46px;border-radius:50%;background:conic-gradient(from 0deg,#0C0C0C,#181818,#0C0C0C,#1C1C1C,#0C0C0C);position:relative;cursor:pointer;flex-shrink:0;box-shadow:2px 4px 12px rgba(0,0,0,0.8),inset 0 0 10px rgba(0,0,0,0.6);transition:transform 0.25s;overflow:hidden}
+.lib-vinyl-saved:hover{transform:translateY(-8px) rotate(5deg)}
+.lib-vinyl-saved::before{content:'';position:absolute;inset:0;border-radius:50%;background:linear-gradient(135deg,rgba(255,255,255,0.07) 0%,transparent 50%)}
+.lib-vinyl-saved::after{content:'';position:absolute;width:28%;height:28%;border-radius:50%;background:#141414;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2}
+.lib-vinyl-lbl{position:absolute;width:24%;height:24%;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3;overflow:hidden}
+.lib-vinyl-lbl img{width:100%;height:100%;object-fit:cover;display:block}
+.lib-saved-empty{font-size:0.68rem;color:rgba(194,109,83,0.3);font-style:italic;font-family:'Cormorant Garamond',serif;padding:8px 0}
+
+/* ROOM */
+#room{overflow-y:auto;background:#0A0604}
+.room-nav{background:#0A0604;border-bottom:1px solid rgba(196,163,90,0.15);box-shadow:0 4px 30px rgba(0,0,0,0.9)}
+.room-nav .nav-logo{color:#E6D8C1}
+.room-nav .nav-tabs{background:rgba(91,54,40,0.4);border:1px solid rgba(196,163,90,0.25)}
+.room-nav .nav-tab{color:rgba(230,216,193,0.45)}
+.room-nav .nav-tab:hover{color:#E6D8C1}
+.room-nav .nav-tab.active{background:#A76D5E;color:#F7F1E6}
+
+.rm-wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;padding:0 0 40px;}
+.rm-title{text-align:center;padding:16px 0 14px;width:100%;position:sticky;top:0;z-index:50;background:linear-gradient(180deg,rgba(10,6,4,0.96),transparent);}
+.rm-title h2{font-family:'Cormorant Garamond',serif;font-size:1.8rem;color:#E6D8C1;letter-spacing:0.1em}
+.rm-title p{font-size:0.65rem;color:#A76D5E;letter-spacing:0.2em;text-transform:uppercase;margin-top:2px}
+
+.rm-scene{width:min(1100px,98vw);position:relative;border-radius:16px;overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,0.9);margin:0 auto;background:#1A0E06;perspective:1200px;height:700px;}
+.rm-wall{position:absolute; top:0; left:0; right:0; height:65%;background-image:url('https://images.unsplash.com/photo-1540518614846-7eded433c457?w=1200&q=80');background-size:cover;background-position:center;filter:brightness(0.6) saturate(0.8);box-shadow: inset 0 -30px 50px rgba(0,0,0,0.8);}
+.rm-floor{position:absolute; bottom:0; left:0; right:0; height:35%;background:#2C1A0A;background-image:repeating-linear-gradient(90deg, rgba(0,0,0,0.4) 0px, transparent 1px, transparent 40px, rgba(0,0,0,0.4) 41px);transform-origin:top center;transform:rotateX(75deg);box-shadow: inset 0 40px 50px rgba(0,0,0,0.9);}
+.rm-light{position:absolute; inset:0; pointer-events:none;background:radial-gradient(circle at 50% 20%, rgba(255,180,100,0.15) 0%, transparent 60%);z-index:1;}
+.rm-inner{position:relative;z-index:2;width:100%;height:100%;transform-style:preserve-3d;}
+
+.rm-gallery{position:absolute; top:5%; left:5%; right:35%;display:flex; flex-wrap:wrap; gap:15px; align-items:flex-start; padding:20px;min-height:400px;transform-style:preserve-3d;}
+.rm-gal-empty{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1rem;color:rgba(240,220,190,0.45);padding:40px 20px;width:100%;text-align:center;text-shadow:0 2px 8px rgba(0,0,0,0.5);}
+
+.rm-poster{position:relative;cursor:pointer;flex-shrink:0;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);box-shadow:5px 15px 25px rgba(0,0,0,0.7);background:#F0E8DC;padding:6px 6px 25px 6px;transform-style:preserve-3d;}
+.rm-poster:hover{transform:scale(1.08) translateZ(20px) !important;z-index:50;box-shadow:10px 25px 35px rgba(0,0,0,0.8)}
+.rm-poster img{width:100%; height:100%; object-fit:cover; display:block; border:1px solid rgba(0,0,0,0.1);}
+.rm-pcap{position:absolute; bottom:8px; left:0; right:0; text-align:center; font-size:8px; color:#6B5030; font-family:'DM Sans',sans-serif; white-space:nowrap; overflow:hidden;}
+.rm-tape{position:absolute;z-index:3;width:35px;height:12px;background:rgba(232,220,200,0.85);border-radius:2px;box-shadow:0 2px 5px rgba(0,0,0,0.3);backdrop-filter:blur(2px);}
+.rm-tape.tl{top:-5px;left:10px;transform:rotate(-5deg)}.rm-tape.tr{top:-5px;right:10px;transform:rotate(5deg)}
+.rm-pin{position:absolute;z-index:3;width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#FFF,#C09090);box-shadow:0 4px 6px rgba(0,0,0,0.5);top:-5px;left:50%;transform:translateX(-50%)}
+
+/* DELETE BUTTON on posters & vinyls */
+.rm-del-btn{
+  position:absolute; top:-10px; right:-10px; z-index:10;
+  width:22px; height:22px; border-radius:50%;
+  background:rgba(180,50,50,0.92); color:#fff;
+  border:1px solid rgba(255,255,255,0.3);
+  font-size:13px; line-height:1; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity 0.2s, transform 0.2s;
+  font-family:'DM Sans',sans-serif;
+  box-shadow:0 2px 8px rgba(0,0,0,0.6);
+}
+.rm-poster:hover .rm-del-btn,
+.rm-vs-rec:hover .rm-del-btn,
+.lib-vinyl-saved:hover .rm-del-btn,
+.rm-saved-item:hover .rm-del-btn{opacity:1; pointer-events:auto;}
+.rm-del-btn:hover{transform:scale(1.15); background:rgba(220,60,60,1);}
+
+.rm-vshelf{position:absolute; bottom:15%; right:10%; width:280px;transform:rotateY(-15deg) translateZ(30px);transform-style:preserve-3d;filter:drop-shadow(20px 30px 40px rgba(0,0,0,0.9));}
+.rm-vs-shelf-bg{background:linear-gradient(145deg, rgba(30,15,5,0.9), rgba(10,5,2,0.95));border:1px solid rgba(196,163,90,0.3);border-radius:12px;padding:15px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -10px 20px rgba(0,0,0,0.8);}
+.rm-vs-shelf-bg::after{content:''; position:absolute; bottom:-15px; left:0; right:0; height:15px;background:#150A04; border-radius:0 0 12px 12px; transform:rotateX(60deg);}
+.rm-vs-title{font-size:0.65rem;letter-spacing:0.2em;color:rgba(196,163,90,0.8);text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:12px;text-shadow:0 2px 5px rgba(0,0,0,0.5);}
+.rm-vs-recs{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;min-height:60px}
+.rm-vs-rec{width:55px;height:55px;border-radius:50%;background:conic-gradient(from 0deg,#050505,#151515,#050505,#1A1A1A,#050505);position:relative;cursor:pointer;flex-shrink:0;box-shadow:4px 8px 20px rgba(0,0,0,0.9),inset 0 0 15px rgba(0,0,0,0.8);transition:transform 0.3s;overflow:visible;}
+.rm-vs-rec:hover{transform:translateY(-15px) rotate(15deg) scale(1.1)}
+.rm-vs-rec::before{content:'';position:absolute;inset:0;border-radius:50%;background:linear-gradient(135deg,rgba(255,255,255,0.1) 0%,transparent 50%)}
+.rm-vs-lbl{position:absolute;width:32%;height:32%;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3;overflow:hidden;box-shadow:0 0 8px rgba(0,0,0,0.9);}
+.rm-vs-lbl img{width:100%;height:100%;object-fit:cover;display:block}
+.rm-vs-empty{font-size:0.8rem;color:rgba(196,163,90,0.4);font-style:italic;font-family:'Cormorant Garamond',serif;}
+
+.rm-now-playing{position:absolute; top:10%; right:5%; width:240px;background:linear-gradient(145deg, rgba(20,10,5,0.9), rgba(5,2,1,0.95));backdrop-filter:blur(20px); border:1px solid rgba(196,163,90,0.3);border-radius:18px; padding:15px; display:none;box-shadow:0 30px 60px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.1);transform:translateZ(50px) rotateY(-5deg);transform-style:preserve-3d;}
+.rm-now-playing.show{display:block; animation: floatIn 0.5s ease;}
+@keyframes floatIn { from{opacity:0; transform: translateY(20px) translateZ(50px) rotateY(-5deg);} to{opacity:1; transform: translateY(0) translateZ(50px) rotateY(-5deg);} }
+.rm-np-label{font-size:0.6rem;letter-spacing:0.2em;color:rgba(196,163,90,0.7);text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:10px}
+.rm-np-cover{width:100%;aspect-ratio:1;border-radius:10px;overflow:hidden;margin-bottom:12px;background:#2A1808;box-shadow:0 10px 20px rgba(0,0,0,0.6);}
+.rm-np-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.rm-np-song{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:#E6D8C1;line-height:1.3;text-shadow:0 2px 5px rgba(0,0,0,0.5);}
+.rm-np-artist{font-size:0.75rem;color:rgba(205,184,157,0.7);margin-top:2px}
+.rm-np-spot{display:block;width:100%;margin-top:15px;padding:10px;background:rgba(30,215,96,0.15);border:1px solid rgba(30,215,96,0.3);border-radius:10px;color:#1ED760;font-size:0.7rem;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:center;transition:all 0.2s;box-shadow:0 4px 10px rgba(0,0,0,0.3);}
+.rm-np-spot:hover{background:rgba(30,215,96,0.25);transform:translateY(-2px);}
+
+.rm-saved-section{width:min(1100px,98vw);margin:20px auto 0;padding:0 4px}
+.rm-saved-section h3{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:#E6D8C1;margin-bottom:10px}
+.rm-saved-empty-msg{font-size:0.76rem;color:#A76D5E;font-style:italic;font-family:'Cormorant Garamond',serif}
+.rm-saved-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
+.rm-saved-item{background:rgba(139,111,71,0.12);border:1px solid rgba(196,163,90,0.15);border-radius:10px;padding:8px;text-align:center;cursor:pointer;transition:all 0.2s;position:relative;}
+.rm-saved-item:hover{background:rgba(139,111,71,0.22);transform:translateY(-2px)}
+.rm-saved-item img{width:48px;height:48px;border-radius:6px;object-fit:cover;margin:0 auto 5px;display:block}
+.rm-saved-name{font-size:0.62rem;color:#E6D8C1;line-height:1.3}
+.rm-saved-artist{font-size:0.56rem;color:#A76D5E;margin-top:1px}
+.rm-saved-spot{font-size:0.56rem;color:#1ED760;margin-top:3px;cursor:pointer;display:block}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);background:rgba(152,160,134,0.95);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.2);border-radius:100px;padding:8px 20px;font-size:0.72rem;color:#F7F1E6;letter-spacing:0.06em;z-index:6000;transition:transform 0.3s,opacity 0.3s;opacity:0}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#rain-c{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:0;transition:opacity 1.2s}
+#rain-c.on{opacity:1}
+.amb-btn{position:fixed;bottom:16px;right:16px;z-index:3000;background:rgba(3,6,14,0.78);backdrop-filter:blur(12px);border:1px solid rgba(205,159,160,0.2);border-radius:100px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:0.68rem;letter-spacing:0.08em;cursor:pointer;transition:all 0.2s;color:#F2C1A3}
+.amb-btn:hover{background:rgba(205,159,160,0.1)}
+#audio-el{display:none}
+</style>
+</head>
+<body>
+<nav id="main-nav">
+  <div class="nav-logo">INDIEFY</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="go('sky')">✦ Sky</button>
+    <button class="nav-tab" onclick="go('library')">◎ Library</button>
+    <button class="nav-tab" onclick="go('room')">⌂ Room</button>
+  </div>
+</nav>
+<button class="amb-btn" id="rainBtn" onclick="toggleRain()">🌧 Rain</button>
+<canvas id="rain-c"></canvas>
+<audio id="audio-el"></audio>
+<div class="toast" id="toast"></div>
+<div class="song-card" id="sCard">
+  <div class="sc-cover"><img id="scImg" src="" alt=""/></div>
+  <div class="sc-title" id="scTitle"></div>
+  <div class="sc-artist" id="scArtist"></div>
+  <div class="sc-year" id="scYear"></div>
+  <div class="sc-prev-wrap">
+    <div class="sc-prev-lbl"><span>30s Preview</span><span id="scPT" style="font-family:'DM Mono',monospace;font-size:0.56rem;color:rgba(205,159,160,0.45)">0:00</span></div>
+    <div class="sc-pbar" id="scPB" onclick="scSeek(event)"><div class="sc-pfill" id="scPF"></div></div>
+    <button class="sc-prev-btn" id="scPBtn" onclick="scToggle()">▶ Preview</button>
+  </div>
+  <div class="sc-btns">
+    <button class="sc-btn sc-save" onclick="doSave()">♡ Save as Poster</button>
+    <button class="sc-btn sc-spotify" onclick="doSpotify()">↗ Spotify</button>
+  </div>
+</div>
+<div class="drag-ghost" id="dragG"><img id="dgImg" src="" alt=""/></div>
+
+<!-- TAB 1 SKY -->
+<section class="section active" id="sky"><canvas id="sky-canvas"></canvas></section>
+
+<!-- TAB 2 LIBRARY -->
+<section class="section" id="library">
+  <div class="lib-hdr">
+    <div class="lib-candle"><div class="lib-flame"></div><div class="lib-cbody"></div><div class="lib-cbase"></div></div>
+    <div class="lib-title"><h2>Vinyl Library</h2><p>Drag any album to the turntable · 30s preview · save · Spotify</p></div>
+    <div class="lib-candle"><div class="lib-flame"></div><div class="lib-cbody"></div><div class="lib-cbase"></div></div>
+  </div>
+  <div class="tt-zone">
+    <div class="turntable" id="turntable">
+      <div class="tt-body">
+        <div class="tt-brand"><span>▸ INDIEFY TURNTABLE</span></div>
+        <div class="tt-pz">
+          <div class="tt-platter" id="ttP">
+            <div class="tt-clabel" id="ttLbl"><div class="tt-clabel-ph" id="ttPh">◎</div><img id="ttImg" src="" style="display:none" alt=""/></div>
+            <div class="tt-spindle"></div>
+          </div>
+          <div class="tt-arm" id="tonearm"><div class="tt-pivot"></div><div class="tt-arm-tube"><div class="tt-arm-head"><div class="tt-arm-needle"></div></div></div></div>
+        </div>
+        <div class="tt-meta"><div class="tt-song" id="ttSong">Drop a vinyl to play</div><div class="tt-art" id="ttArt">—</div></div>
+        <div class="tt-ctrl">
+          <button class="ttb sm" onclick="ttPrev()">⏮</button>
+          <button class="ttb lg" id="playBtn" onclick="ttToggle()">▶</button>
+          <button class="ttb sm" onclick="ttNext()">⏭</button>
+        </div>
+        <div class="tt-prog">
+          <span class="tt-tm" id="ttCur">0:00</span>
+          <div class="tt-bar" id="pBar" onclick="seekTo(event)"><div class="tt-fill" id="pFill"></div></div>
+          <span class="tt-tm" id="ttDur">0:30</span>
+        </div>
+        <div class="tt-badge" id="ttBadge">▸ 30 Second Preview</div>
+        <div class="tt-actions">
+          <button class="tt-ab save" onclick="ttSave()">♡ Save to Vinyl Shelf</button>
+          <button class="tt-ab spot" id="ttSpot" onclick="ttOpenSpot()">↗ Open in Spotify</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:center">
+    <div class="shelf-wrap">
+      <div class="shelf-arch">
+        <span class="shelf-arch-label">Upper Gallery · 115 Records</span>
+        <span class="shelf-arch-label">— Drag Any Album to Turntable —</span>
+        <span class="shelf-arch-label">Ground Floor · 115 Records</span>
+      </div>
+      <div class="shelf-container" id="shelfCont"></div>
+    </div>
+  </div>
+  <div class="lib-saved-shelf">
+    <div class="lib-saved-title">▸ My Vinyl Collection</div>
+    <div class="lib-saved-vinyls" id="libSaved"><div class="lib-saved-empty">Save songs to build your collection</div></div>
+  </div>
+</section>
+
+<!-- TAB 3 ROOM -->
+<section class="section" id="room">
+<div class="rm-wrap">
+  <div class="rm-title">
+    <h2>My Room</h2>
+    <p>Save from ✦ Sky for posters · Save from ◎ Library for vinyls</p>
+  </div>
+
+  <div class="rm-scene">
+    <div class="rm-wall"></div>
+    <div class="rm-floor"></div>
+    <div class="rm-light"></div>
+    <div class="rm-inner">
+      <div class="rm-gallery" id="rmGal">
+        <div class="rm-gal-empty" id="rmGalE">Save songs from ✦ Sky — they appear as posters on your wall</div>
+      </div>
+      <div class="rm-now-playing" id="rmNP">
+        <div class="rm-np-label">♪ Now Playing</div>
+        <div class="rm-np-cover"><img id="rmNPImg" src="" alt=""/></div>
+        <div class="rm-np-song" id="rmNPSong"></div>
+        <div class="rm-np-artist" id="rmNPArtist"></div>
+        <button class="rm-np-spot" id="rmNPSpot" onclick="rmOpenSpot()">↗ Open Full Song in Spotify</button>
+      </div>
+      <div class="rm-vshelf">
+        <div class="rm-vs-shelf-bg">
+          <div class="rm-vs-title">▸ Saved Vinyls</div>
+          <div class="rm-vs-recs" id="rmVR">
+            <div class="rm-vs-empty">Save songs from ◎ Library</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rm-saved-section">
+    <h3>Saved Songs</h3>
+    <div id="rmSavedGrid"><div class="rm-saved-empty-msg">Nothing saved yet.</div></div>
+  </div>
+</div>
+</section>
+
+<script>
+// ─── DATA (unchanged from your original) ───
+const SONGS=[{"id": 1, "title": "O Pagli Re", "artist": "Kriti Kashyap", "year": "2025", "album": "O Pagli Re", "cover_url": "https://i.scdn.co/image/ab67616d0000b2738f591708ffe7e27471a2892e", "spotify_url": "https://open.spotify.com/track/6hahgJiNdrdTYV1mvfhpvW", "spotify_id": "6hahgJiNdrdTYV1mvfhpvW"}, {"id": 2, "title": "Boidesha Bondhu Re", "artist": "Kriti Kashyap", "year": "2025", "album": "Boidesha Bondhu Re", "cover_url": "https://i.scdn.co/image/ab67616d0000b27313f110526db21b0c402e053e", "spotify_url": "https://open.spotify.com/track/5Gt7RCAcDRXK8tdZSFuocZ", "spotify_id": "5Gt7RCAcDRXK8tdZSFuocZ"}, {"id": 3, "title": "Mayabi Aakash", "artist": "Kriti Kashyap", "year": "2025", "album": "Mayabi Aakash", "cover_url": "https://i.scdn.co/image/ab67616d0000b273fe45cab03d363f90e9fccbc6", "spotify_url": "https://open.spotify.com/track/11b9BoiHxE06fkrkVQ3X1Y", "spotify_id": "11b9BoiHxE06fkrkVQ3X1Y"}, {"id": 4, "title": "Anyayo", "artist": "Krtin Kay", "year": "2026", "album": "Anyayo", "cover_url": "https://i.scdn.co/image/ab67616d0000b273c8925eb9a0844a22c924abf7", "spotify_url": "https://open.spotify.com/track/5yCOc1MOoekBjy56pCYZHS", "spotify_id": "5yCOc1MOoekBjy56pCYZHS"}, {"id": 5, "title": "Farishta", "artist": "Krtin Kay", "year": "2025", "album": "Farishta", "cover_url": "https://i.scdn.co/image/ab67616d0000b2737250bc6c0254c5715e74152a", "spotify_url": "https://open.spotify.com/track/3p6XVnjDf6WJtjhw0VO40d", "spotify_id": "3p6XVnjDf6WJtjhw0VO40d"}, {"id": 6, "title": "Lost", "artist": "Krtin Kay", "year": "2025", "album": "Lost", "cover_url": "https://i.scdn.co/image/ab67616d0000b273e12b034df0c81b661dc9d41b", "spotify_url": "https://open.spotify.com/track/0bbo7uvZJaNSCW2kk71E8U", "spotify_id": "0bbo7uvZJaNSCW2kk71E8U"}, {"id": 7, "title": "Noor", "artist": "Saaheal", "year": "2026", "album": "Noor", "cover_url": "https://i.scdn.co/image/ab67616d0000b273b767e97be139b9bd73043e25", "spotify_url": "https://open.spotify.com/track/5JjxhoPVlC54Or4qqvJegR", "spotify_id": "5JjxhoPVlC54Or4qqvJegR"}, {"id": 8, "title": "It's You", "artist": "Saaheal", "year": "2026", "album": "It's You", "cover_url": "https://i.scdn.co/image/ab67616d0000b27384f235e47b2df5bc1040d0cd", "spotify_url": "https://open.spotify.com/track/2RuwQkfamYpvVap4DsAHJ6", "spotify_id": "2RuwQkfamYpvVap4DsAHJ6"}, {"id": 9, "title": "Dear Maahiya (From \"UR Debut\")", "artist": "Saaheal", "year": "2025", "album": "Dear Maahiya (From \"UR Debut\")", "cover_url": "https://i.scdn.co/image/ab67616d0000b2730278e2dcc4b9ed95a21ee819", "spotify_url": "https://open.spotify.com/track/090K4Rhx3tnhrSxCFmlzye", "spotify_id": "090K4Rhx3tnhrSxCFmlzye"}, {"id": 10, "title": "Alvida", "artist": "Rauhan Malik", "year": "2026", "album": "Karvaan", "cover_url": "https://i.scdn.co/image/ab67616d0000b27351cebf0bac1d7e43c99ab01e", "spotify_url": "https://open.spotify.com/track/0qg1Wt3IxYCsSr11MXXIZr", "spotify_id": "0qg1Wt3IxYCsSr11MXXIZr"}, {"id": 11, "title": "Karvaan", "artist": "Rauhan Malik", "year": "2026", "album": "Karvaan", "cover_url": "https://i.scdn.co/image/ab67616d0000b27351cebf0bac1d7e43c99ab01e", "spotify_url": "https://open.spotify.com/track/1g8Udsbb3HAZRyMMRF790q", "spotify_id": "1g8Udsbb3HAZRyMMRF790q"}, {"id": 12, "title": "Zindagi", "artist": "Rauhan Malik", "year": "2026", "album": "Karvaan", "cover_url": "https://i.scdn.co/image/ab67616d0000b27351cebf0bac1d7e43c99ab01e", "spotify_url": "https://open.spotify.com/track/3ziS0x5VTMYeGzmoQd9Hfe", "spotify_id": "3ziS0x5VTMYeGzmoQd9Hfe"}, {"id": 13, "title": "Jaaneman", "artist": "Rauhan Malik", "year": "2025", "album": "Jaaneman", "cover_url": "https://i.scdn.co/image/ab67616d0000b2730de04fd2c7c3bdc0a1d765f5", "spotify_url": "https://open.spotify.com/track/4oZcJ3rS5haex4c2oIxzWa", "spotify_id": "3ucuIRT1Vv17aoZKoYQOA0"}, {"id": 14, "title": "Kya Kahu", "artist": "Rauhan Malik", "year": "2024", "album": "Kab", "cover_url": "https://i.scdn.co/image/ab67616d0000b273e992ce746c41f340d506e11b", "spotify_url": "https://open.spotify.com/track/6XLwy1E0j9hoa8mC4PcN7i", "spotify_id": "6XLwy1E0j9hoa8mC4PcN7i"}, {"id": 15, "title": "Asar", "artist": "Rauhan Malik", "year": "2024", "album": "Kab", "cover_url": "https://i.scdn.co/image/ab67616d0000b273e992ce746c41f340d506e11b", "spotify_url": "https://open.spotify.com/track/3e6rjjvDzdDMzJDI9aCX5r", "spotify_id": "3e6rjjvDzdDMzJDI9aCX5r"}, {"id": 16, "title": "Bezubaan", "artist": "Rauhan Malik", "year": "2024", "album": "Kab", "cover_url": "https://i.scdn.co/image/ab67616d0000b273e992ce746c41f340d506e11b", "spotify_url": "https://open.spotify.com/track/6f8iH8yPmmBdbxG6i5CcJG", "spotify_id": "6f8iH8yPmmBdbxG6i5CcJG"}, {"id": 17, "title": "Pehli Dafa", "artist": "Adarsh Rao", "year": "2026", "album": "Pehli Dafa", "cover_url": "https://i.scdn.co/image/ab67616d0000b2731f2a5415090aec696a573ed3", "spotify_url": "https://open.spotify.com/track/7DdO9zEdtIXFUqBz6bG0WK", "spotify_id": "7DdO9zEdtIXFUqBz6bG0WK"}, {"id": 18, "title": "Shukran", "artist": "Adarsh Rao", "year": "2026", "album": "Shukran", "cover_url": "https://i.scdn.co/image/ab67616d0000b2739e5e6060b6df6580d074ef43", "spotify_url": "https://open.spotify.com/track/5ZESOvRqnWTlToSG2ZEkSN", "spotify_id": "5ZESOvRqnWTlToSG2ZEkSN"}, {"id": 19, "title": "Gallan", "artist": "Adarsh Rao", "year": "2025", "album": "Gallan", "cover_url": "https://i.scdn.co/image/ab67616d0000b273b032b8cec9cdaf52e0af7181", "spotify_url": "https://open.spotify.com/track/3dJHo9pC3LNkaEdfttGMfv", "spotify_id": "3dJHo9pC3LNkaEdfttGMfv"}, {"id": 20, "title": "Naam Karu Bada - From \"Tu Yaa Main\"", "artist": "Adarsh Gourav", "year": "2026", "album": "Naam Karu Bada (From \"Tu Yaa Main\")", "cover_url": "https://i.scdn.co/image/ab67616d0000b273b04aac826f0c4762b9f68bf1", "spotify_url": "https://open.spotify.com/track/23kMv9ZRkuZMBRmMQ7f7Wq", "spotify_id": "23kMv9ZRkuZMBRmMQ7f7Wq"}, {"id": 21, "title": "Jee Liya - From \"Tu Yaa Main\"", "artist": "Adarsh Gourav", "year": "2026", "album": "Jee Liya (From \"Tu Yaa Main\")", "cover_url": "https://i.scdn.co/image/ab67616d0000b273dfd7b65b4d410ecd37db3e3a", "spotify_url": "https://open.spotify.com/track/0H545XfNvoSu9THGf8mBnd", "spotify_id": "0H545XfNvoSu9THGf8mBnd"}, {"id": 22, "title": "Bechaini", "artist": "Adarsh Gourav", "year": "2024", "album": "Bechaini", "cover_url": "https://i.scdn.co/image/ab67616d0000b27363240ab0cf3c7e402baa5eb3", "spotify_url": "https://open.spotify.com/track/6f18ZZhJnm1rMxaATYWQ2g", "spotify_id": "6f18ZZhJnm1rMxaATYWQ2g"}, {"id": 23, "title": "Promise", "artist": "Aditya Rikhari", "year": "2026", "album": "Promise", "cover_url": "https://i.scdn.co/image/ab67616d0000b273bd2e649ac8845de4cc43d78f", "spotify_url": "https://open.spotify.com/track/1QLtC4Tk6POoueI3wrntEF", "spotify_id": "1QLtC4Tk6POoueI3wrntEF"}, {"id": 24, "title": "Bin Tere", "artist": "Aditya Rikhari", "year": "2026", "album": "Aditya Rikhari - Underrated Gems", "cover_url": "https://i.scdn.co/image/ab67616d0000b2735a2446fe05f8af3121583ca2", "spotify_url": "https://open.spotify.com/track/443u3V3HCksLqFMu9XigRp", "spotify_id": "3HmkI0yLP6fE6wPrjjTnWJ"}, {"id": 25, "title": "Haule Haule", "artist": "Aditya Rikhari", "year": "2026", "album": "Aditya Rikhari - Underrated Gems", "cover_url": "https://i.scdn.co/image/ab67616d0000b2739e89a65d75e201117dc52002", "spotify_url": "https://open.spotify.com/track/0vwp5T3RdtUQKrQy9jMHMB", "spotify_id": "73ut9PgPkIFo2aNSdROBQ6"}, {"id": 26, "title": "Unstoppable - I-Popstar: Vol. 1", "artist": "Aditya Rikhari", "year": "2025", "album": "I-Popstar: Vol. 1 | Episode 16", "cover_url": "https://i.scdn.co/image/ab67616d0000b273185c4f1cd2f25e98c03d08c8", "spotify_url": "https://open.spotify.com/track/1Yc1bKGkBBj288gOMAKdVH", "spotify_id": "05nOYtOGM1W3wKsAtUpt6Y"}, {"id": 27, "title": "Lauta Do - I-Popstar: Vol. 1", "artist": "Aditya Rikhari", "year": "2025", "album": "I-Popstar: Vol. 1 | Episode 16", "cover_url": "https://i.scdn.co/image/ab67616d0000b2730a47bbe7141fdfe0eb2cdba7", "spotify_url": "https://open.spotify.com/track/00Jt3mY6qJwgQNwfrVx3V8", "spotify_id": "0eLtIxPRNJfsmehITZ1qaJ"}, {"id": 28, "title": "Radhika - I-Popstar: Vol. 1", "artist": "Aditya Rikhari", "year": "2025", "album": "I-Popstar: Vol. 1 | Episode 16", "cover_url": "https://i.scdn.co/image/ab67616d0000b2733a09fb7b6654fc1c0bd048af", "spotify_url": "https://open.spotify.com/track/5NkpmtxLopsQyvzqMXlEup", "spotify_id": "5NkpmtxLopsQyvzqMXlEup"}, {"id": 29, "title": "I-Popstar - Season Hits Medley - I-Popstar: Vol. 1", "artist": "Aditya Rikhari", "year": "2025", "album": "I-Popstar: Vol. 1 | Episode 16", "cover_url": "https://i.scdn.co/image/ab67616d0000b2733a09fb7b6654fc1c0bd048af", "spotify_url": "https://open.spotify.com/track/3i2Ckc4ApwhbGQDoBldK3A", "spotify_id": "3i2Ckc4ApwhbGQDoBldK3A"}, {"id": 30, "title": "Raah Teri - I-Popstar: Vol. 1", "artist": "Aditya Rikhari", "year": "2025", "album": "I-Popstar: Vol. 1 | Episode 16", "cover_url": "https://i.scdn.co/image/ab67616d0000b2733a09fb7b6654fc1c0bd048af", "spotify_url": "https://open.spotify.com/track/1gTgYp9txjUpifhgfLvR3l", "spotify_id": "1gTgYp9txjUpifhgfLvR3l"}, {"id": 31, "title": "Rang", "artist": "Garvit - Priyansh", "year": "2026", "album": "Rang", "cover_url": "https://i.scdn.co/image/ab67616d0000b27356fa9a39c36ff2900d9e51f1", "spotify_url": "https://open.spotify.com/track/1lYdEfyIy0AjjuzMTcwwh5", "spotify_id": "1lYdEfyIy0AjjuzMTcwwh5"}, {"id": 32, "title": "Sanware - from 'NOT A STUDIO SESSION'", "artist": "Garvit - Priyansh", "year": "2026", "album": "Sanware (from 'NOT A STUDIO SESSION')", "cover_url": "https://i.scdn.co/image/ab67616d0000b2731ec131e39a7569374bdd2346", "spotify_url": "https://open.spotify.com/track/0BNJVeB8MmM0aCwZAnfEpa", "spotify_id": "0BNJVeB8MmM0aCwZAnfEpa"}, {"id": 33, "title": "Theher Ja", "artist": "Garvit - Priyansh", "year": "2025", "album": "Theher Ja", "cover_url": "https://i.scdn.co/image/ab67616d0000b273b9b56a91fa328950bc1b05ac", "spotify_url": "https://open.spotify.com/track/62G4WNFaG4HlsD5it4kgsw", "spotify_id": "62G4WNFaG4HlsD5it4kgsw"}, {"id": 36, "title": "Kaahe Mose", "artist": "Garvit Soni", "year": "2025", "album": "Kaahe Mose", "cover_url": "https://i.scdn.co/image/ab67616d0000b2731f2c1b67a525cb5b6ccbb7fd", "spotify_url": "https://open.spotify.com/track/2kdLpMajZ2VoKEAv9nGsUz", "spotify_id": "2kdLpMajZ2VoKEAv9nGsUz"}, {"id": 37, "title": "Aahatein / Kuchh Khaas (Cover)", "artist": "Garvit", "year": "2021", "album": "Aahatein / Kuchh Khaas (Cover)", "cover_url": "https://i.scdn.co/image/ab67616d0000b2731523411b7b2c97ed9e27a202", "spotify_url": "https://open.spotify.com/track/4gELhETL0HNrLwVgpgpyer", "spotify_id": "4gELhETL0HNrLwVgpgpyer"}, {"id": 38, "title": "Gayenge Hum Tere Hi Liye", "artist": "Osho Jain", "year": "2026", "album": "Gayenge Hum Tere Hi Liye", "cover_url": "https://i.scdn.co/image/ab67616d0000b273809147b03efa1bfab558c008", "spotify_url": "https://open.spotify.com/track/5yf181IrzJhvNWk6PF0fk4", "spotify_id": "5yf181IrzJhvNWk6PF0fk4"}, {"id": 39, "title": "Dekha Hi Nahi", "artist": "Osho Jain", "year": "2025", "album": "Dekha Hi Nahi", "cover_url": "https://i.scdn.co/image/ab67616d0000b27355933249f276317292be3d2d", "spotify_url": "https://open.spotify.com/track/5GcVuKV12CryRih9BDiXBk", "spotify_id": "5GcVuKV12CryRih9BDiXBk"}, {"id": 40, "title": "Uff", "artist": "Osho Jain", "year": "2024", "album": "Uff", "cover_url": "https://i.scdn.co/image/ab67616d0000b273078280c8ff629d58b0d98483", "spotify_url": "https://open.spotify.com/track/7rF3cZERZvYoPG7fRfBJ66", "spotify_id": "7rF3cZERZvYoPG7fRfBJ66"}, {"id": 41, "title": "Rab Hai", "artist": "Osho Jain", "year": "2024", "album": "Uff", "cover_url": "https://i.scdn.co/image/ab67616d0000b273078280c8ff629d58b0d98483", "spotify_url": "https://open.spotify.com/track/4TxF4UVx4Ag3m0vUNacCIm", "spotify_id": "4TxF4UVx4Ag3m0vUNacCIm"}, {"id": 42, "title": "Dekha Hi Nahi", "artist": "Osho Jain", "year": "2024", "album": "Uff", "cover_url": "https://i.scdn.co/image/ab67616d0000b273078280c8ff629d58b0d98483", "spotify_url": "https://open.spotify.com/track/5zK7gzWMZlT4TUf2iN2Wjw", "spotify_id": "5zK7gzWMZlT4TUf2iN2Wjw"}, {"id": 43, "title": "Hadd Paar", "artist": "Osho Jain", "year": "2024", "album": "Uff", "cover_url": "https://i.scdn.co/image/ab67616d0000b273078280c8ff629d58b0d98483", "spotify_url": "https://open.spotify.com/track/3OfFl6MMRV6y5xPB388xhe", "spotify_id": "3OfFl6MMRV6y5xPB388xhe"}, {"id": 44, "title": "Tu Hi", "artist": "Osho Jain", "year": "2024", "album": "Uff", "cover_url": "https://i.scdn.co/image/ab67616d0000b273078280c8ff629d58b0d98483", "spotify_url": "https://open.spotify.com/track/0sXeltHrMMTLL3Ct9lfuAJ", "spotify_id": "0sXeltHrMMTLL3Ct9lfuAJ"}, {"id": 48, "title": "Mora Saawan Sookh Gaya", "artist": "Manoj Yadav", "year": "2026", "album": "Mora Saawan Sookh Gaya", "cover_url": "https://i.scdn.co/image/ab67616d0000b273ce34ca404d62bb2df9fbe83d", "spotify_url": "https://open.spotify.com/track/6oDSJGlPT8lLAKAqQ7PKiu", "spotify_id": "6oDSJGlPT8lLAKAqQ7PKiu"}, {"id": 49, "title": "TAUL DEB RUPIYA SE", "artist": "Manoj Yadav", "year": "2026", "album": "TAUL DEB RUPIYA SE", "cover_url": "https://i.scdn.co/image/ab67616d0000b27391d26072b7cb1032b146bb5a", "spotify_url": "https://open.spotify.com/track/56UMGwxFDxbaxsbyvHpS2v", "spotify_id": "56UMGwxFDxbaxsbyvHpS2v"}, {"id": 50, "title": "MANAVA BAM BAM BOLATA", "artist": "Manoj Yadav", "year": "2026", "album": "MANAVA BAM BAM BOLATA", "cover_url": "https://i.scdn.co/image/ab67616d0000b273b01ce362ad82cb99a5f7304c", "spotify_url": "https://open.spotify.com/track/2abxJk6qUIk1MXgvG7uVfB", "spotify_id": "2abxJk6qUIk1MXgvG7uVfB"}, {"id": 51, "title": "Raushni", "artist": "Samar Mehdi", "year": "2022", "album": "Raushni", "cover_url": "https://i.scdn.co/image/ab67616d0000b273ef5d2c6c150bd4087070aed6", "spotify_url": "https://open.spotify.com/track/72UbfWeoIsLoAuIiuEejiH", "spotify_id": "72UbfWeoIsLoAuIiuEejiH"}, {"id": 52, "title": "Martbaan", "artist": "Samar Mehdi", "year": "2021", "album": "Martbaan", "cover_url": "https://i.scdn.co/image/ab67616d0000b2739b3828fc78ebb041f98c2dea", "spotify_url": "https://open.spotify.com/track/3NyVaRd7ei6erCESpTQzDL", "spotify_id": "3NyVaRd7ei6erCESpTQzDL"}, {"id": 53, "title": "Sukoon", "artist": "Samar Mehdi", "year": "2020", "album": "Sukoon", "cover_url": "https://i.scdn.co/image/ab67616d0000b27369212e3f0ff959ca3a1e286d", "spotify_url": "https://open.spotify.com/track/3DwDpL9QpO5gqPFuHZXUx9", "spotify_id": "3DwDpL9QpO5gqPFuHZXUx9"}, {"id": 54, "title": "Bichadna", "artist": "Amir Ameer", "year": "2025", "album": "Bichadna", "cover_url": "https://i.scdn.co/image/ab67616d0000b2739fc8567bcfa0a58953a5ba99", "spotify_url": "https://open.spotify.com/track/30HPcTpMEEbTaR79T9zLmn", "spotify_id": "30HPcTpMEEbTaR79T9zLmn"}, {"id": 55, "title": "Ankh Uthy Tere Liye - Beautiful Hamd", "artist": "Amir Ameer", "year": "2025", "album": "Ankh Uthy Tere Liye - Beautiful Hamd", "cover_url": "https://i.scdn.co/image/ab67616d0000b2739ed63fd51428877f5130753b", "spotify_url": "https://open.spotify.com/track/5dWG2ZiXaMf8ptvDg70YHL", "spotify_id": "5dWG2ZiXaMf8ptvDg70YHL"}, {"id": 56, "title": "Ishq - From \"Lost;Found\"", "artist": "Amir Ameer", "year": "2024", "album": "Ishq (From \"Lost;Found\")", "cover_url": "https://i.scdn.co/image/ab67616d0000b2739e3495a35db3c1e374ce09b5", "spotify_url": "https://open.spotify.com/track/7hDoxkN20lLb06zifzYnD2", "spotify_id": "7hDoxkN20lLb06zifzYnD2"}, {"id": 57, "title": "Dhaage", "artist": "Sameer Anjaan", "year": "2026", "album": "Dhaage", "cover_url": "https://i.scdn.co/image/ab67616d0000b273189be44896bde6924d9b9f6d", "spotify_url": "https://open.spotify.com/track/2XFpn8m8FHeWhDfmH2SAFi", "spotify_id": "2XFpn8m8FHeWhDfmH2SAFi"}, {"id": 58, "title": "La", "artist": "Sameer Anjaan", "year": "2026", "album": "La", "cover_url": "https://i.scdn.co/image/ab67616d0000b273fa920f89391ed44363385d09", "spotify_url": "https://open.spotify.com/track/0bP9cLj0T5v3DPHU3n8GD2", "spotify_id": "0bP9cLj0T5v3DPHU3n8GD2"}, {"id": 59, "title": "SAJDA", "artist": "Sameer Anjaan", "year": "2026", "album": "SAJDA", "cover_url": "https://i.scdn.co/image/ab67616d0000b273d8faee8fa05b2a2cc14562e2", "spotify_url": "https://open.spotify.com/track/7rRfJH9QhWEDC1nbhxvd2y", "spotify_id": "7rRfJH9QhWEDC1nbhxvd2y"}, {"id": 60, "title": "Aasmani", "artist": "Samad Khan", "year": "2026", "album": "Aasmani (Deluxe)", "cover_url": "https://i.scdn.co/image/ab67616d0000b273cdae19c32d831d8684dc5c3f", "spotify_url": "https://open.spotify.com/track/3j3ZjZxgJDtH8UsrOvPUJ9", "spotify_id": "3j3ZjZxgJDtH8UsrOvPUJ9"}, {"id": 61, "title": "Aaye Re", "artist": "Samad Khan", "year": "2026", "album": "Aasmani (Deluxe)", "cover_url": "https://i.scdn.co/image/ab67616d0000b273cdae19c32d831d8684dc5c3f", "spotify_url": "https://open.spotify.com/track/1oUi1SR8Y1p0apj41VAqce", "spotify_id": "1oUi1SR8Y1p0apj41VAqce"}, {"id": 62, "title": "Aao Na", "artist": "Samad Khan", "year": "2026", "album": "Aasmani (Deluxe)", "cover_url": "https://i.scdn.co/image/ab67616d0000b273cdae19c32d831d8684dc5c3f", "spotify_url": "https://open.spotify.com/track/0VpnLVPhimBnXOzYFzMj5A", "spotify_id": "0VpnLVPhimBnXOzYFzMj5A"}, {"id": 63, "title": "Aaye Re", "artist": "Samad Khan", "year": "2026", "album": "Aasmani", "cover_url": "https://i.scdn.co/image/ab67616d0000b2730ebf5a24672cf912eb592fb4", "spotify_url": "https://open.spotify.com/track/4w3oF9PxaA18jMYPrXfUZM", "spotify_id": "4w3oF9PxaA18jMYPrXfUZM"}, {"id": 64, "title": "Aasmani", "artist": "Samad Khan", "year": "2026", "album": "Aasmani", "cover_url": "https://i.scdn.co/image/ab67616d0000b2730ebf5a24672cf912eb592fb4", "spotify_url": "https://open.spotify.com/track/1cnYfIyxflsgDQz3ND5WWf", "spotify_id": "1cnYfIyxflsgDQz3ND5WWf"}, {"id": 65, "title": "Aao Na", "artist": "Samad Khan", "year": "2026", "album": "Aasmani", "cover_url": "https://i.scdn.co/image/ab67616d0000b2730ebf5a24672cf912eb592fb4", "spotify_url": "https://open.spotify.com/track/3E5paqQcR3TyAhvVxdnWqo", "spotify_id": "3E5paqQcR3TyAhvVxdnWqo"}, {"id": 66, "title": "Aaye Re", "artist": "Samad Khan", "year": "2025", "album": "Aaye Re", "cover_url": "https://i.scdn.co/image/ab67616d0000b273e199236dfb638ef6cd176517", "spotify_url": "https://open.spotify.com/track/7hEJ4dnjlebJZVxWsfZH7n", "spotify_id": "7hEJ4dnjlebJZVxWsfZH7n"}, {"id": 67, "title": "Aesthetic", "artist": "Qadir Khan", "year": "2025", "album": "Aesthetic", "cover_url": "https://i.scdn.co/image/ab67616d0000b273719af266eac5b4eb2e7fb4d4", "spotify_url": "https://open.spotify.com/track/6db0rS3n1RuSHgDGfXnjkC", "spotify_id": "6db0rS3n1RuSHgDGfXnjkC"}, {"id": 68, "title": "Badastoor", "artist": "Qadir Khan", "year": "2024", "album": "Badastoor", "cover_url": "https://i.scdn.co/image/ab67616d0000b27393efa03f98564db305e48ab5", "spotify_url": "https://open.spotify.com/track/6c2mfnY9XCh8mXAaUYTnh5", "spotify_id": "6c2mfnY9XCh8mXAaUYTnh5"}, {"id": 69, "title": "Tere Bina - Lofi Flip", "artist": "Qadir Khan", "year": "2021", "album": "Tere Bina (Lofi Flip)", "cover_url": "https://i.scdn.co/image/ab67616d0000b2733b4120a9cf45b57702dffdbf", "spotify_url": "https://open.spotify.com/track/36RUXg3A6mjjpBLl3sPFb5", "spotify_id": "36RUXg3A6mjjpBLl3sPFb5"}, {"id": 73, "title": "Yeh Safar (feat. Shaan)", "artist": "King", "year": "2026", "album": "Yeh Safar (feat. Shaan)", "cover_url": "https://i.scdn.co/image/ab67616d0000b273388911ef537259ef1cd19f57", "spotify_url": "https://open.spotify.com/track/7Cs6GGO82Fhkw9bRvu4ceG", "spotify_id": "7Cs6GGO82Fhkw9bRvu4ceG"}, {"id": 74, "title": "Yeh Dil Mujhko Tu Dede (feat. Sunidhi Chauhan)", "artist": "King", "year": "2026", "album": "Yeh Dil Mujhko Tu Dede (feat. Sunidhi Chauhan)", "cover_url": "https://i.scdn.co/image/ab67616d0000b2735320cb315fe3a4c80a8ee006", "spotify_url": "https://open.spotify.com/track/5pvyuHiUNwFIGn9ZR2PbRH", "spotify_id": "5pvyuHiUNwFIGn9ZR2PbRH"}, {"id": 75, "title": "Woh Pehla Akshar (feat. Rekha Bhardwaj)", "artist": "King", "year": "2026", "album": "Woh Pehla Akshar (feat. Rekha Bhardwaj)", "cover_url": "https://i.scdn.co/image/ab67616d0000b273f9fdbeb2df38500280ff57cc", "spotify_url": "https://open.spotify.com/track/5wqca3DX2fX1BsRhss2j2z", "spotify_id": "5wqca3DX2fX1BsRhss2j2z"}, {"id": 76, "title": "Seva Simran Satsang", "artist": "King Ricky", "year": "2025", "album": "Seva Simran Satsang", "cover_url": "https://i.scdn.co/image/ab67616d0000b2736f158619f85be9b8f91528ac", "spotify_url": "https://open.spotify.com/track/509iWA38Hzzwo7VHRd9IBu", "spotify_id": "509iWA38Hzzwo7VHRd9IBu"}, {"id": 77, "title": "Ganpati", "artist": "King Ricky", "year": "2025", "album": "Ganpati", "cover_url": "https://i.scdn.co/image/ab67616d0000b27352c3c92b04cc0a8a9f62ee22", "spotify_url": "https://open.spotify.com/track/6EY90FwHreIXfAngEmfL53", "spotify_id": "6EY90FwHreIXfAngEmfL53"}, {"id": 78, "title": "Love Story", "artist": "King Ricky", "year": "2025", "album": "Love Story", "cover_url": "https://i.scdn.co/image/ab67616d0000b27365afccd77b463c1a4bdc50c2", "spotify_url": "https://open.spotify.com/track/2DMkDQIXoVJrcLUz7DQ58Y", "spotify_id": "2DMkDQIXoVJrcLUz7DQ58Y"}, {"id": 79, "title": "Banda Tere Liye - From \"Happy Patel - Khatarnak Jasoos\"", "artist": "Ash King", "year": "2025", "album": "Banda Tere Liye (From \"Happy Patel - Khatarnak Jasoos\")", "cover_url": "https://i.scdn.co/image/ab67616d0000b2738bee3921c6eb9d99b404bdac", "spotify_url": "https://open.spotify.com/track/2MpAD2UsOIvRzy1li9Jx7J", "spotify_id": "2MpAD2UsOIvRzy1li9Jx7J"}, {"id": 80, "title": "Meherbaan Lofi Mix by Deepanshu Ruhela", "artist": "Ash King", "year": "2025", "album": "Meherbaan Lofi Mix by Deepanshu Ruhela", "cover_url": "https://i.scdn.co/image/ab67616d0000b273eafd70d972a0988ef4a08662", "spotify_url": "https://open.spotify.com/track/45TAOfkyVRoD706jvXe3ct", "spotify_id": "45TAOfkyVRoD706jvXe3ct"}, {"id": 81, "title": "Dhadke Yeh Dil", "artist": "Ash King", "year": "2025", "album": "Dhadke Yeh Dil", "cover_url": "https://i.scdn.co/image/ab67616d0000b27393209aa46dd1fadb4c8484b3", "spotify_url": "https://open.spotify.com/track/6BLNwQhWR0YKTTedZsfMbT", "spotify_id": "6BLNwQhWR0YKTTedZsfMbT"}, {"id": 82, "title": "sun saawariya", "artist": "Accha Insaan", "year": "2026", "album": "sun saawariya", "cover_url": "https://i.scdn.co/image/ab67616d0000b273eb9812989e6d533217625f2d", "spotify_url": "https://open.spotify.com/track/0dnsJ8W8k4ncYstIsrz5pY", "spotify_id": "0dnsJ8W8k4ncYstIsrz5pY"}, {"id": 83, "title": "Main Tera", "artist": "Accha Insaan", "year": "2024", "album": "Main Tera", "cover_url": "https://i.scdn.co/image/ab67616d0000b273b23a631835794db20e86c2f6", "spotify_url": "https://open.spotify.com/track/3SqTTLPktoECRmkGriw5bx", "spotify_id": "3SqTTLPktoECRmkGriw5bx"}, {"id": 84, "title": "sirfira", "artist": "Accha Insaan", "year": "2022", "album": "sirfira", "cover_url": "https://i.scdn.co/image/ab67616d0000b27339dfd52653ef4eeab21b158c", "spotify_url": "https://open.spotify.com/track/64X8fzbQJbrgn6GgXUEId3", "spotify_id": "64X8fzbQJbrgn6GgXUEId3"}, {"id": 88, "title": "Pyar Se", "artist": "Kushagra", "year": "2026", "album": "Pyar Se", "cover_url": "https://i.scdn.co/image/ab67616d0000b2734fc17a3fb5173fc325d2a587", "spotify_url": "https://open.spotify.com/track/6Pe0vVB8zA7ZMRDSWhNxaD", "spotify_id": "6Pe0vVB8zA7ZMRDSWhNxaD"}, {"id": 89, "title": "Finding Her (with Alec Benjamin)", "artist": "Kushagra", "year": "2025", "album": "Finding Her (with Alec Benjamin)", "cover_url": "https://i.scdn.co/image/ab67616d0000b2731d383e8ec413211267a4503a", "spotify_url": "https://open.spotify.com/track/1cLzePtRGjy8COog3VyxVD", "spotify_id": "1cLzePtRGjy8COog3VyxVD"}, {"id": 90, "title": "Bairiya (Lofi Version)", "artist": "Kushagra", "year": "2025", "album": "Bairiya (Lofi Version)", "cover_url": "https://i.scdn.co/image/ab67616d0000b273534c83daf3091265e79d71ed", "spotify_url": "https://open.spotify.com/track/2uD61jFx4GUD87cF9KzuLJ", "spotify_id": "2uD61jFx4GUD87cF9KzuLJ"}, {"id": 91, "title": "Tu Chandwa - Gehra Hua Marathi Version", "artist": "Abhay Jodhpurkar", "year": "2026", "album": "Tu Chandwa - Gehra Hua Marathi Version", "cover_url": "https://i.scdn.co/image/ab67616d0000b27336b652cb061143dce7484331", "spotify_url": "https://open.spotify.com/track/1tS1zI6bBOP5q7S26LOjXp", "spotify_id": "1tS1zI6bBOP5q7S26LOjXp"}, {"id": 92, "title": "Har Lamha Tum Se", "artist": "Abhay Jodhpurkar", "year": "2026", "album": "Har Lamha Tum Se", "cover_url": "https://i.scdn.co/image/ab67616d0000b273b436627cec7df099c610994b", "spotify_url": "https://open.spotify.com/track/1noTFqTeJQZK59WGJdSzc0", "spotify_id": "1noTFqTeJQZK59WGJdSzc0"}, {"id": 93, "title": "Saath Saath", "artist": "Abhay Jodhpurkar", "year": "2026", "album": "Saath Saath", "cover_url": "https://i.scdn.co/image/ab67616d0000b273edde043276843bf21ffd8454", "spotify_url": "https://open.spotify.com/track/0N9GCutZWMj7HvRWsudz0w", "spotify_id": "0N9GCutZWMj7HvRWsudz0w"}, {"id": 94, "title": "Billori", "artist": "Krtin Kay", "year": "2026", "album": "Billori", "cover_url": "https://i.scdn.co/image/ab67616d0000b27320ea58aaa7eafdceb385693c", "spotify_url": "https://open.spotify.com/track/5SIkHcIoALVqyFIRiD5vhF", "spotify_id": "5SIkHcIoALVqyFIRiD5vhF"}, {"id": 95, "title": "Banjar", "artist": "Krtin Kay", "year": "2026", "album": "Banjar", "cover_url": "https://i.scdn.co/image/ab67616d0000b273012d3a0608176c169866505f", "spotify_url": "https://open.spotify.com/track/7DYP0J4CsMFGy43eSht1oG", "spotify_id": "7DYP0J4CsMFGy43eSht1oG"}, {"id": 97, "title": "Khatt 2.0", "artist": "Rauhan Malik", "year": "2026", "album": "Khatt 2.0", "cover_url": "https://i.scdn.co/image/ab67616d0000b27363fa9d78c0f58e582b8c85b6", "spotify_url": "https://open.spotify.com/track/0eFGZK6gRMBTIyG5qhy5hG", "spotify_id": "0eFGZK6gRMBTIyG5qhy5hG"}, {"id": 101, "title": "Rozaana (Lofi Version)", "artist": "Saaheal", "year": "2026", "album": "Rozaana (Lofi Version)", "cover_url": "https://i.scdn.co/image/ab67616d0000b2738e1ceb20cacfcdd710283f47", "spotify_url": "https://open.spotify.com/track/0vEx3pRAxlqbBOeIrOfB2P", "spotify_id": "0vEx3pRAxlqbBOeIrOfB2P"}, {"id": 102, "title": "Balma", "artist": "Saaheal", "year": "2026", "album": "Balma", "cover_url": "https://i.scdn.co/image/ab67616d0000b2739738ead1f5a9e93b536a9f00", "spotify_url": "https://open.spotify.com/track/2Ao7j1XOc6CdC1Nehjatzo", "spotify_id": "2Ao7j1XOc6CdC1Nehjatzo"}, {"id": 104, "title": "Sukoon Mila", "artist": "Adarsh Rao", "year": "2026", "album": "Sukoon Mila", "cover_url": "https://i.scdn.co/image/ab67616d0000b273d358e537648bafdbfe24f1d4", "spotify_url": "https://open.spotify.com/track/1FIrQ0y01tmVExqS09HozS", "spotify_id": "1FIrQ0y01tmVExqS09HozS"}, {"id": 105, "title": "Sajan", "artist": "Adarsh Rao", "year": "2026", "album": "Saajan", "cover_url": "https://i.scdn.co/image/ab67616d0000b273a33af688ecafd381f2b6aa64", "spotify_url": "https://open.spotify.com/track/3O5QLk8mBXoDiaCZVmPd8e", "spotify_id": "3O5QLk8mBXoDiaCZVmPd8e"}, {"id": 106, "title": "Tere Ishq Mein", "artist": "Adarsh Rao", "year": "2026", "album": "Tere Ishq Mein", "cover_url": "https://i.scdn.co/image/ab67616d0000b27355446feb88233fbb3fa565f6", "spotify_url": "https://open.spotify.com/track/3esTBvFoUZRf8qyEfGrzxo", "spotify_id": "3esTBvFoUZRf8qyEfGrzxo"}, {"id": 114, "title": "Manva Mera", "artist": "Garvit - Priyansh", "year": "2026", "album": "Manva Mera", "cover_url": "https://i.scdn.co/image/ab67616d0000b273949070d1f588a9475a12f2a1", "spotify_url": "https://open.spotify.com/track/4KHeyyU6JFCaCU4EZ2fKd0", "spotify_id": "4KHeyyU6JFCaCU4EZ2fKd0"}, {"id": 115, "title": "Saawan Bhi Thehra", "artist": "Garvit - Priyansh", "year": "2026", "album": "Saawan Bhi Thehra", "cover_url": "https://i.scdn.co/image/ab67616d0000b273eefb2123834f873452505807", "spotify_url": "https://open.spotify.com/track/1UEff8xgE38s8QqydL2nZQ", "spotify_id": "1UEff8xgE38s8QqydL2nZQ"}, {"id": 120, "title": "Taare Ginke - Reprise", "artist": "Gajendra Verma", "year": "2026", "album": "Taare Ginke (Reprise)", "cover_url": "https://i.scdn.co/image/ab67616d0000b273d342a8f9da064025b3dfb4c2", "spotify_url": "https://open.spotify.com/track/3ePleJEELvXFIYJlhXNJV1", "spotify_id": "3ePleJEELvXFIYJlhXNJV1"}, {"id": 126, "title": "Punha Punha - From \"Tumbadchi Manjula\"", "artist": "Manoj Yadav", "year": "2026", "album": "Punha Punha (From \"Tumbadchi Manjula\")", "cover_url": "https://i.scdn.co/image/ab67616d0000b273b3ee6f03e62994e0e62c08e8", "spotify_url": "https://open.spotify.com/track/7It0tGf3Y6enk2ubMAM8MA", "spotify_id": "7It0tGf3Y6enk2ubMAM8MA"}, {"id": 127, "title": "Suno Naa Dil (From \"Daadi Ki Shaadi\")", "artist": "Manoj Yadav", "year": "2026", "album": "Suno Naa Dil (From \"Daadi Ki Shaadi\")", "cover_url": "https://i.scdn.co/image/ab67616d0000b2737dd95d01c59f0d830e43edcb", "spotify_url": "https://open.spotify.com/track/3GrkvMjNHnBwrpu7qeDCHA", "spotify_id": "3GrkvMjNHnBwrpu7qeDCHA"}, {"id": 128, "title": "Payaliya Girla Ho Piya", "artist": "Manoj Yadav", "year": "2026", "album": "Payaliya Girla Ho Piya", "cover_url": "https://i.scdn.co/image/ab67616d0000b2738b883ba3482832c6495d3aee", "spotify_url": "https://open.spotify.com/track/3Oh6qOoSAdedQ8UJejR0Dn", "spotify_id": "3Oh6qOoSAdedQ8UJejR0Dn"}, {"id": 132, "title": "Zara Zara - Original Score", "artist": "Samar Jafri", "year": "2026", "album": "Zara Zara (Original Score)", "cover_url": "https://i.scdn.co/image/ab67616d0000b273f2ebed33f1f74ae3d81315bf", "spotify_url": "https://open.spotify.com/track/15xDD6cA5MmuKMwm2n569n", "spotify_id": "15xDD6cA5MmuKMwm2n569n"}, {"id": 133, "title": "Kami", "artist": "Samar Jafri", "year": "2026", "album": "Kami", "cover_url": "https://i.scdn.co/image/ab67616d0000b273b30e1f22e944b37fcc970b0a", "spotify_url": "https://open.spotify.com/track/6xA10nNluk8fggCxN1hoI7", "spotify_id": "6xA10nNluk8fggCxN1hoI7"}, {"id": 134, "title": "Har Baar", "artist": "Samar Jafri", "year": "2026", "album": "Har Baar", "cover_url": "https://i.scdn.co/image/ab67616d0000b27379787723876968786603bf4a", "spotify_url": "https://open.spotify.com/track/3VJpl4jrFSqY3Y6mAzqfux", "spotify_id": "3VJpl4jrFSqY3Y6mAzqfux"}, {"id": 135, "title": "Dobara Tumse Mulakat Hogi", "artist": "Sameer Anjaan", "year": "2026", "album": "Reload 90", "cover_url": "https://i.scdn.co/image/ab67616d0000b2734fb517ca5c5afb90faedd960", "spotify_url": "https://open.spotify.com/track/7M1dg5ViqKsgmF7ZUqeY9y", "spotify_id": "7M1dg5ViqKsgmF7ZUqeY9y"}, {"id": 136, "title": "Ek Mulakat", "artist": "Sameer Anjaan", "year": "2026", "album": "Reload 90", "cover_url": "https://i.scdn.co/image/ab67616d0000b2734fb517ca5c5afb90faedd960", "spotify_url": "https://open.spotify.com/track/7n9aMhxaLROQNW75PLnzJa", "spotify_id": "7n9aMhxaLROQNW75PLnzJa"}, {"id": 137, "title": "Yaad Aaye Woh Barsaate", "artist": "Sameer Anjaan", "year": "2026", "album": "Reload 90", "cover_url": "https://i.scdn.co/image/ab67616d0000b2734fb517ca5c5afb90faedd960", "spotify_url": "https://open.spotify.com/track/5itmQdhdvgDPJVdASeBCUX", "spotify_id": "5itmQdhdvgDPJVdASeBCUX"}, {"id": 138, "title": "Mere Betab Dil Ko", "artist": "Sameer Anjaan", "year": "2026", "album": "Reload 90", "cover_url": "https://i.scdn.co/image/ab67616d0000b2734fb517ca5c5afb90faedd960", "spotify_url": "https://open.spotify.com/track/1hZL6QnRhFI846zTQV9Fr2", "spotify_id": "1hZL6QnRhFI846zTQV9Fr2"}, {"id": 139, "title": "Isharo He Isharo Mein", "artist": "Sameer Anjaan", "year": "2026", "album": "Reload 90", "cover_url": "https://i.scdn.co/image/ab67616d0000b2734fb517ca5c5afb90faedd960", "spotify_url": "https://open.spotify.com/track/1EXgdSjpQvGaEyH2hhYhmM", "spotify_id": "1EXgdSjpQvGaEyH2hhYhmM"}, {"id": 140, "title": "Piya Bairiya", "artist": "Sameer Anjaan", "year": "2026", "album": "Piya Bairiya", "cover_url": "https://i.scdn.co/image/ab67616d0000b273daad7b56c9f889a878725193", "spotify_url": "https://open.spotify.com/track/77Y5DYmnPcC8xLoWE1GADr", "spotify_id": "77Y5DYmnPcC8xLoWE1GADr"}, {"id": 154, "title": "Jee Lenge (From \"Lukkhe\")", "artist": "King", "year": "2026", "album": "Jee Lenge (From \"Lukkhe\")", "cover_url": "https://i.scdn.co/image/ab67616d0000b273a33db5f689ae8914e633dee9", "spotify_url": "https://open.spotify.com/track/4bk0ZtrZukJT9GhvRO4Rri", "spotify_id": "4bk0ZtrZukJT9GhvRO4Rri"}, {"id": 155, "title": "Bulletproof (From \"Lukkhe\")", "artist": "King", "year": "2026", "album": "Bulletproof (From \"Lukkhe\")", "cover_url": "https://i.scdn.co/image/ab67616d0000b2739f22a9700834f8af75cd6ca1", "spotify_url": "https://open.spotify.com/track/1jIIO95sVRWK97p6xYMx3b", "spotify_id": "1jIIO95sVRWK97p6xYMx3b"}, {"id": 157, "title": "Suga Boo", "artist": "King Ricky", "year": "2026", "album": "Suga Boo", "cover_url": "https://i.scdn.co/image/ab67616d0000b27399cf7c99c79c4fc3ed8c9e06", "spotify_url": "https://open.spotify.com/track/0cXTKV7leXmVHoxnL57Zm4", "spotify_id": "0cXTKV7leXmVHoxnL57Zm4"}, {"id": 158, "title": "Ehi Arz Hai", "artist": "King Ricky", "year": "2026", "album": "Ehi Arz Hai", "cover_url": "https://i.scdn.co/image/ab67616d0000b27349bcdb0dec30066445e5cedd", "spotify_url": "https://open.spotify.com/track/6W9JdwJn7b3v7VjNDvNR9u", "spotify_id": "6W9JdwJn7b3v7VjNDvNR9u"}, {"id": 159, "title": "Kahani", "artist": "King Ricky", "year": "2026", "album": "Kahani", "cover_url": "https://i.scdn.co/image/ab67616d0000b2731105b49538ea82b1d739b6df", "spotify_url": "https://open.spotify.com/track/4Kq8JVbsq7fjnnpKGOU2Ur", "spotify_id": "4Kq8JVbsq7fjnnpKGOU2Ur"}, {"id": 179, "title": "Pyar Se (Lofi Version)", "artist": "Kushagra", "year": "2026", "album": "Pyar Se (Lofi Version)", "cover_url": "https://i.scdn.co/image/ab67616d0000b273a1ca57e7bd62b8172f4b784b", "spotify_url": "https://open.spotify.com/track/0b8Regp9HXkQvc86RzAP2d", "spotify_id": "0b8Regp9HXkQvc86RzAP2d"}, {"id": 183, "title": "Starstruck", "artist": "Kushagra", "year": "2026", "album": "Starstruck", "cover_url": "https://i.scdn.co/image/ab67616d0000b2739aca1535a4aa0c8b35097e3a", "spotify_url": "https://open.spotify.com/track/4B3Zu3ZkocQJ5uZ0LSVi2z", "spotify_id": "4B3Zu3ZkocQJ5uZ0LSVi2z"}, {"id": 189, "title": "Tu", "artist": "Abhay Jodhpurkar", "year": "2026", "album": "Tu", "cover_url": "https://i.scdn.co/image/ab67616d0000b2732020209bb10a078ac8f45795", "spotify_url": "https://open.spotify.com/track/0CtP89LrDxgrDegDWkOSZv", "spotify_id": "0CtP89LrDxgrDegDWkOSZv"}, {"id": 190, "title": "Sang Tere Jhoome - From \"Gullak: S5\"", "artist": "Abhay Jodhpurkar", "year": "2026", "album": "Sang Tere Jhoome (From \"Gullak: S5\")", "cover_url": "https://i.scdn.co/image/ab67616d0000b273eea72209e58f8a7f09ed7bf2", "spotify_url": "https://open.spotify.com/track/5ulPLTvuYjr647UX5zlCEd", "spotify_id": "5ulPLTvuYjr647UX5zlCEd"}, {"id": 192, "title": "Hey Jagannath prabhu", "artist": "Abhay Jodhpurkar", "year": "2026", "album": "Hey Jagannath prabhu", "cover_url": "https://i.scdn.co/image/ab67616d0000b2737baec228a4755dc0b120c2b2", "spotify_url": "https://open.spotify.com/track/2124OYjRB0f91QmUWIgxW1", "spotify_id": "2124OYjRB0f91QmUWIgxW1"}, {"id": 220, "title": "Lihaaz", "artist": "Abhijeet Srivastava", "year": "2026", "album": "Lihaaz", "cover_url": "https://i.scdn.co/image/ab67616d0000b273faf69ecda81aa544661cf53a", "spotify_url": "https://open.spotify.com/track/7F7eGanKKwcaAjhdaRZQNe", "spotify_id": "7F7eGanKKwcaAjhdaRZQNe"}, {"id": 223, "title": "You're The One", "artist": "Abhijeet Srivastava", "year": "2025", "album": "You're The One", "cover_url": "https://i.scdn.co/image/ab67616d0000b273b312525fe8f8f542f4d76f56", "spotify_url": "https://open.spotify.com/track/4DVa7cjsNBr5e66ohl9qHC", "spotify_id": "4DVa7cjsNBr5e66ohl9qHC"}, {"id": 224, "title": "Sarva Gunn Sampann", "artist": "Abhijeet Srivastava", "year": "2025", "album": "You're The One", "cover_url": "https://i.scdn.co/image/ab67616d0000b273b312525fe8f8f542f4d76f56", "spotify_url": "https://open.spotify.com/track/3mc4ceAtFKFgl7qQaKp5W1", "spotify_id": "3mc4ceAtFKFgl7qQaKp5W1"}, {"id": 225, "title": "Jeevan Ki Dor", "artist": "Abhijeet Srivastava", "year": "2025", "album": "You're The One", "cover_url": "https://i.scdn.co/image/ab67616d0000b273b312525fe8f8f542f4d76f56", "spotify_url": "https://open.spotify.com/track/3AkLhbIccR0YGb2FEfsG07", "spotify_id": "3AkLhbIccR0YGb2FEfsG07"}, {"id": 227, "title": "Chunnari Chunnari (Lofi Mix)", "artist": "Abhijeet", "year": "2026", "album": "Chunnari Chunnari (Lofi Mix)", "cover_url": "https://i.scdn.co/image/ab67616d0000b2734d65fbd6c7a8e2bd8b7cfcde", "spotify_url": "https://open.spotify.com/track/6TgtSPEGRIgWA55326vdTJ", "spotify_id": "6TgtSPEGRIgWA55326vdTJ"}, {"id": 230, "title": "Mori Mori Sundari", "artist": "Abhijeet", "year": "2026", "album": "Mori Mori Sundari", "cover_url": "https://i.scdn.co/image/ab67616d0000b27380d48c0eaf3083b069c87271", "spotify_url": "https://open.spotify.com/track/733j1ZnhSdYqLVdsxGFROO", "spotify_id": "733j1ZnhSdYqLVdsxGFROO"}, {"id": 234, "title": "Tumhe Kitna Pyaar Karte Lofi Flip", "artist": "Arijit Singh", "year": "2026", "album": "Tumhe Kitna Pyaar Karte Lofi Flip", "cover_url": "https://i.scdn.co/image/ab67616d0000b273c38c0199bb96bda83d12c9da", "spotify_url": "https://open.spotify.com/track/60lud5k20MUM8k69CjhSBt", "spotify_id": "60lud5k20MUM8k69CjhSBt"}, {"id": 236, "title": "Ve Maahi - Arijit Singh & Asees Kaur Vocals Only", "artist": "Arijit Singh", "year": "2026", "album": "Ve Maahi - Arijit Singh & Asees Kaur Vocals Only", "cover_url": "https://i.scdn.co/image/ab67616d0000b273f06d384a7be3ca8dca360225", "spotify_url": "https://open.spotify.com/track/0Whbz9EEfZQyIcerKuJRm2", "spotify_id": "0Whbz9EEfZQyIcerKuJRm2"}, {"id": 239, "title": "Naina Lofi Mix by DJ Moodyboy", "artist": "Arijit Singh", "year": "2026", "album": "Naina Lofi Mix by DJ Moodyboy", "cover_url": "https://i.scdn.co/image/ab67616d0000b2731fcfd40ab37cf830478c3e77", "spotify_url": "https://open.spotify.com/track/1YX39MBcyfJ080qV01wf7o", "spotify_id": "1YX39MBcyfJ080qV01wf7o"}, {"id": 249, "title": "WINGLE", "artist": "Aditya Bhardwaj", "year": "2025", "album": "WINGLE", "cover_url": "https://i.scdn.co/image/ab67616d0000b273c002686a65c403d591b0703a", "spotify_url": "https://open.spotify.com/track/0Ir9AzHY26VrEeS0ZSRsMt", "spotify_id": "0Ir9AzHY26VrEeS0ZSRsMt"}, {"id": 250, "title": "AKELE", "artist": "Aditya Bhardwaj", "year": "2025", "album": "AKELE", "cover_url": "https://i.scdn.co/image/ab67616d0000b273e40924be2faf24b8ab2b4e2b", "spotify_url": "https://open.spotify.com/track/2oqkFrmirTIKvSF7y2O73Y", "spotify_id": "2oqkFrmirTIKvSF7y2O73Y"}, {"id": 251, "title": "Diwali", "artist": "Aditya Bhardwaj", "year": "2024", "album": "Diwali", "cover_url": "https://i.scdn.co/image/ab67616d0000b273ecf2fab25384519dc7e8c0c0", "spotify_url": "https://open.spotify.com/track/4mP3U1F3FFZyfZLXbXQacy", "spotify_id": "4mP3U1F3FFZyfZLXbXQacy"}, {"id": 253, "title": "Aankhen khuli ho ya yara", "artist": "Aditya Sharma", "year": "2024", "album": "Aankhen khuli ho ya yara", "cover_url": "https://i.scdn.co/image/ab67616d0000b2735567f26fb150a1cb71f58636", "spotify_url": "https://open.spotify.com/track/4kVzBXdU1X1s2VmqEetwPK", "spotify_id": "4kVzBXdU1X1s2VmqEetwPK"}, {"id": 256, "title": "Behaal Kar Diya", "artist": "Aditya Sharma", "year": "2024", "album": "Behaal Kar Diya", "cover_url": "https://i.scdn.co/image/ab67616d0000b2730eedcd9231807ae1ff7b1a6c", "spotify_url": "https://open.spotify.com/track/32tKmjnQememgTdTQ9o639", "spotify_id": "32tKmjnQememgTdTQ9o639"}, {"id": 259, "title": "Assi Sajna", "artist": "Aditya Sharma", "year": "2024", "album": "Assi Sajna", "cover_url": "https://i.scdn.co/image/ab67616d0000b273fb8f839b634e03f13da73145", "spotify_url": "https://open.spotify.com/track/3xIyi0QRmcz0cBDbVPTNGd", "spotify_id": "3xIyi0QRmcz0cBDbVPTNGd"}, {"id": 262, "title": "Chaand Baaliyan - Synthwave", "artist": "Aditya A", "year": "2026", "album": "Chaand Baaliyan (Synthwave)", "cover_url": "https://i.scdn.co/image/ab67616d0000b273eeb27396e5cd4e33847383f9", "spotify_url": "https://open.spotify.com/track/109dHnAPy7KdOj7Vekh3yL", "spotify_id": "109dHnAPy7KdOj7Vekh3yL"}, {"id": 265, "title": "College Ki Sadak 2.0", "artist": "Aditya A", "year": "2025", "album": "Anticlockwise (Live Sessions)", "cover_url": "https://i.scdn.co/image/ab67616d0000b273eab319c2a6e3beba526573b9", "spotify_url": "https://open.spotify.com/track/1EVFBKY8AIvDHCqxXmH0jJ", "spotify_id": "1EVFBKY8AIvDHCqxXmH0jJ"}, {"id": 266, "title": "Kahaniyan 2.0", "artist": "Aditya A", "year": "2025", "album": "Anticlockwise (Live Sessions)", "cover_url": "https://i.scdn.co/image/ab67616d0000b273eab319c2a6e3beba526573b9", "spotify_url": "https://open.spotify.com/track/3jAhxnz0aOMXRc9uiD3ujc", "spotify_id": "3jAhxnz0aOMXRc9uiD3ujc"}, {"id": 269, "title": "Resham Ki Dor", "artist": "Aditya A", "year": "2025", "album": "Resham Ki Dor", "cover_url": "https://i.scdn.co/image/ab67616d0000b273b5f39c8ef5a3957776b70557", "spotify_url": "https://open.spotify.com/track/0gnUcv3ZvRuW4McbtUw2wl", "spotify_id": "0gnUcv3ZvRuW4McbtUw2wl"}, {"id": 278, "title": "Ambara", "artist": "Mitraz", "year": "2025", "album": "Ambara", "cover_url": "https://i.scdn.co/image/ab67616d0000b273dfd1300a5aeecf49b199a9b5", "spotify_url": "https://open.spotify.com/track/6r1DGha1KiMgSPLQQcrK2A", "spotify_id": "6r1DGha1KiMgSPLQQcrK2A"}, {"id": 279, "title": "Jaane Lofi", "artist": "Mitraz", "year": "2025", "album": "Jaane Lofi", "cover_url": "https://i.scdn.co/image/ab67616d0000b273d6ae0041b6b9b0f1d03c970e", "spotify_url": "https://open.spotify.com/track/7uFWuSdp3obfvd4cpNd3Li", "spotify_id": "7uFWuSdp3obfvd4cpNd3Li"}, {"id": 280, "title": "Ishq - Lofi", "artist": "Mitraz", "year": "2025", "album": "Ishq (Lofi)", "cover_url": "https://i.scdn.co/image/ab67616d0000b273f1a99e252d9668c2a9723a32", "spotify_url": "https://open.spotify.com/track/73R8ZI38KWUzHcQVKmMoxP", "spotify_id": "73R8ZI38KWUzHcQVKmMoxP"}, {"id": 287, "title": "Ho Na Juda", "artist": "Mitraz", "year": "2021", "album": "Ho Na Juda", "cover_url": "https://i.scdn.co/image/ab67616d0000b273295c33c53af04b6486aa62f7", "spotify_url": "https://open.spotify.com/track/6SOGS3vTU6SNtEEho62TRo", "spotify_id": "6SOGS3vTU6SNtEEho62TRo"}, {"id": 291, "title": "Humdard Banunga", "artist": "Mitraz", "year": "2024", "album": "Humdard Banunga", "cover_url": "https://i.scdn.co/image/ab67616d0000b27363f60f073eaa45ce0189ad8f", "spotify_url": "https://open.spotify.com/track/0O9HA7OgI5x3Eb3WqRZnRv", "spotify_id": "0O9HA7OgI5x3Eb3WqRZnRv"}, {"id": 299, "title": "Raaz", "artist": "Zaeden", "year": "2025", "album": "Raaz", "cover_url": "https://i.scdn.co/image/ab67616d0000b2732ead52d38ba167ff02f9569d", "spotify_url": "https://open.spotify.com/track/0cZBUtaPwfmsopHLd8zuag", "spotify_id": "0cZBUtaPwfmsopHLd8zuag"}, {"id": 302, "title": "Deewana", "artist": "Zaeden", "year": "2024", "album": "Deewana", "cover_url": "https://i.scdn.co/image/ab67616d0000b2738a9027475d4696f62541b1cc", "spotify_url": "https://open.spotify.com/track/6aFrlVjQaB8AK0PdOLreMz", "spotify_id": "6aFrlVjQaB8AK0PdOLreMz"}, {"id": 323, "title": "Zulfe", "artist": "Saahel", "year": "2026", "album": "Zulfe", "cover_url": "https://i.scdn.co/image/ab67616d0000b273a4aa135c78dbef7dfc59fe27", "spotify_url": "https://open.spotify.com/track/5Jr6BVsaP2w8YgkFxobTYf", "spotify_id": "5Jr6BVsaP2w8YgkFxobTYf"}, {"id": 325, "title": "Duhaai", "artist": "Saahel", "year": "2026", "album": "Duhaai", "cover_url": "https://i.scdn.co/image/ab67616d0000b273adc7e9fc680beafcf2ae08de", "spotify_url": "https://open.spotify.com/track/3KoxL3EkonVdQyKVc3T0h4", "spotify_id": "3KoxL3EkonVdQyKVc3T0h4"}, {"id": 332, "title": "SAAWALI", "artist": "Saahel", "year": "2025", "album": "SAAWALI", "cover_url": "https://i.scdn.co/image/ab67616d0000b27328eb23ff5e69cd496fb811dc", "spotify_url": "https://open.spotify.com/track/4Fr72bmq08t2mL0Ad66i03", "spotify_id": "4Fr72bmq08t2mL0Ad66i03"}, {"id": 346, "title": "Dishehara (Gehra Hua Bengali Version)", "artist": "Shashwat Sachdev", "year": "2026", "album": "Dishehara (Gehra Hua Bengali Version)", "cover_url": "https://i.scdn.co/image/ab67616d0000b2730a8a465a2cdf7b3a162e8c3f", "spotify_url": "https://open.spotify.com/track/5UdzCL0x1APS28LAatkJHk", "spotify_id": "5UdzCL0x1APS28LAatkJHk"}, {"id": 348, "title": "Nin Nizhal (Malayalam)", "artist": "Shashwat Sachdev", "year": "2026", "album": "Nin Nizhal (Malayalam)", "cover_url": "https://i.scdn.co/image/ab67616d0000b273f03638cf35ebef2ebb14fc2d", "spotify_url": "https://open.spotify.com/track/0cL9KeQlEsoreQWiI83TZQ", "spotify_id": "0cL9KeQlEsoreQWiI83TZQ"}, {"id": 349, "title": "Jaiye Sajana - Recreated", "artist": "Shashwat Sachdev", "year": "2026", "album": "Jaiye Sajana - Recreated", "cover_url": "https://i.scdn.co/image/ab67616d0000b273df0bd30e4ba8b1636edec4d3", "spotify_url": "https://open.spotify.com/track/1geDWIpPN8zwNe0MUJznfr", "spotify_id": "1geDWIpPN8zwNe0MUJznfr"}, {"id": 357, "title": "Saajan Mora", "artist": "Dikshant", "year": "2026", "album": "Saajan Mora", "cover_url": "https://i.scdn.co/image/ab67616d0000b27321011b2198bad894fc7a823e", "spotify_url": "https://open.spotify.com/track/08h4IJb0Ijr7w8900JJEts", "spotify_id": "08h4IJb0Ijr7w8900JJEts"}, {"id": 361, "title": "Saajan", "artist": "Dikshant", "year": "2026", "album": "Saajan", "cover_url": "https://i.scdn.co/image/ab67616d0000b273922a7e3aa970888187e566fd", "spotify_url": "https://open.spotify.com/track/7DlJqM9YWWBBx3HvqnrssC", "spotify_id": "7DlJqM9YWWBBx3HvqnrssC"}, {"id": 363, "title": "Intezaar", "artist": "Dikshant", "year": "2025", "album": "Aakhri Baat", "cover_url": "https://i.scdn.co/image/ab67616d0000b273d6e432abf9f16e9cad471006", "spotify_url": "https://open.spotify.com/track/0iPHyX6HIFzzM2VxoCUDtw", "spotify_id": "0iPHyX6HIFzzM2VxoCUDtw"}, {"id": 364, "title": "Ae Dil", "artist": "Dikshant", "year": "2025", "album": "Aakhri Baat", "cover_url": "https://i.scdn.co/image/ab67616d0000b273d6e432abf9f16e9cad471006", "spotify_url": "https://open.spotify.com/track/0B686kMUgkRjlVaDBcgJ5Q", "spotify_id": "0B686kMUgkRjlVaDBcgJ5Q"}, {"id": 365, "title": "Qareeb", "artist": "Dikshant", "year": "2025", "album": "Aakhri Baat", "cover_url": "https://i.scdn.co/image/ab67616d0000b273d6e432abf9f16e9cad471006", "spotify_url": "https://open.spotify.com/track/09thGBzUTHaF7HeqjoEHoA", "spotify_id": "09thGBzUTHaF7HeqjoEHoA"}, {"id": 366, "title": "Aakhri Baat", "artist": "Dikshant", "year": "2025", "album": "Aakhri Baat", "cover_url": "https://i.scdn.co/image/ab67616d0000b273d6e432abf9f16e9cad471006", "spotify_url": "https://open.spotify.com/track/4JDOpckRo7xPIfYEf0WGQK", "spotify_id": "4JDOpckRo7xPIfYEf0WGQK"}, {"id": 368, "title": "Hare Ka Sahara Mera Shyam Bana", "artist": "Prashant Pandey", "year": "2026", "album": "Hare Ka Sahara Mera Shyam Bana", "cover_url": "https://i.scdn.co/image/ab67616d0000b2731bb68e373cc2036f508fd174", "spotify_url": "https://open.spotify.com/track/1W1g31M8Yg39X3wrk2KqOV", "spotify_id": "1W1g31M8Yg39X3wrk2KqOV"}, {"id": 369, "title": "Jija Lal Kaile Lahangva", "artist": "Prashant Pandey", "year": "2026", "album": "Jija Lal Kaile Lahangva", "cover_url": "https://i.scdn.co/image/ab67616d0000b273692edc037841e85067022e56", "spotify_url": "https://open.spotify.com/track/1BAXyILNq9a7ldEFusgsLK", "spotify_id": "1BAXyILNq9a7ldEFusgsLK"}, {"id": 371, "title": "Devra Hamra Shalvar Me", "artist": "Prashant Pandey", "year": "2026", "album": "Devra Hamra Shalvar Me", "cover_url": "https://i.scdn.co/image/ab67616d0000b273de5d96672342e0af7ef5e87c", "spotify_url": "https://open.spotify.com/track/1HfEc521NFt7M5Ehv3WRm6", "spotify_id": "1HfEc521NFt7M5Ehv3WRm6"}, {"id": 376, "title": "Main Toh Tera", "artist": "Bharath", "year": "2026", "album": "Main Toh Tera", "cover_url": "https://i.scdn.co/image/ab67616d0000b2737d425e8cc2a502096bcb7b6f", "spotify_url": "https://open.spotify.com/track/4V60e3GKZSf1wBatByTuyC", "spotify_id": "4V60e3GKZSf1wBatByTuyC"}, {"id": 378, "title": "Aise Na Pagal Karo", "artist": "Bharath", "year": "2026", "album": "Aise Na Pagal Karo", "cover_url": "https://i.scdn.co/image/ab67616d0000b2739707cfcadf512b81bfbdd18d", "spotify_url": "https://open.spotify.com/track/0C5vCd4id8DxoDM9HSUpBh", "spotify_id": "0C5vCd4id8DxoDM9HSUpBh"}, {"id": 380, "title": "Finding Her (Kannada Version)", "artist": "Bharath", "year": "2026", "album": "Finding Her (Kannada Version)", "cover_url": "https://i.scdn.co/image/ab67616d0000b27360157010a9d77b22321d2ccd", "spotify_url": "https://open.spotify.com/track/3GkpEXkMibSCNIvMHT9dxa", "spotify_id": "3GkpEXkMibSCNIvMHT9dxa"}, {"id": 389, "title": "Yun Hi Kahin", "artist": "The Yellow Diary", "year": "2025", "album": "Yun Hi Kahin", "cover_url": "https://i.scdn.co/image/ab67616d0000b273060022bb62ce1bfb11146c0b", "spotify_url": "https://open.spotify.com/track/5F4hwTVNZwutsNEG8OPnoJ", "spotify_id": "5F4hwTVNZwutsNEG8OPnoJ"}, {"id": 391, "title": "Aqda", "artist": "The Yellow Diary", "year": "2024", "album": "Aqda", "cover_url": "https://i.scdn.co/image/ab67616d0000b273d4bd42c4b8a3e6dc2615b85e", "spotify_url": "https://open.spotify.com/track/0R1Y0bivX5ASIh4Tiyl65w", "spotify_id": "0R1Y0bivX5ASIh4Tiyl65w"}, {"id": 392, "title": "Chhadd Jaave", "artist": "The Yellow Diary", "year": "2024", "album": "Aqda", "cover_url": "https://i.scdn.co/image/ab67616d0000b273d4bd42c4b8a3e6dc2615b85e", "spotify_url": "https://open.spotify.com/track/2SbmSBVyJbhqaTZU1wUZw3", "spotify_id": "2SbmSBVyJbhqaTZU1wUZw3"}, {"id": 393, "title": "Kahe Kahe", "artist": "The Yellow Diary", "year": "2024", "album": "Aqda", "cover_url": "https://i.scdn.co/image/ab67616d0000b273d4bd42c4b8a3e6dc2615b85e", "spotify_url": "https://open.spotify.com/track/1d5NjI30bxeOgw1C2Ii7aS", "spotify_id": "1d5NjI30bxeOgw1C2Ii7aS"}, {"id": 396, "title": "Chhadd Jaave", "artist": "The Yellow Diary", "year": "2024", "album": "Chhadd Jaave", "cover_url": "https://i.scdn.co/image/ab67616d0000b2738eb819f56fd8ae32af375aee", "spotify_url": "https://open.spotify.com/track/0R1ME9ewzPRKNqU3Qj5fJQ", "spotify_id": "0R1ME9ewzPRKNqU3Qj5fJQ"}, {"id": 397, "title": "Kahe Kahe", "artist": "The Yellow Diary", "year": "2024", "album": "Chhadd Jaave", "cover_url": "https://i.scdn.co/image/ab67616d0000b2738eb819f56fd8ae32af375aee", "spotify_url": "https://open.spotify.com/track/5n5LGoXDNJljKuj5vmA2Om", "spotify_id": "5n5LGoXDNJljKuj5vmA2Om"}, {"id": 415, "title": "Husn", "artist": "Anuv Jain", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2730d3449f333a83a25feb423f8", "spotify_url": "https://open.spotify.com/search/husn%20anuv%20jain", "spotify_id": ""}, {"id": 416, "title": "Gul", "artist": "Anuv Jain", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2734cdf85ea439ad82b1b0a69ea", "spotify_url": "https://open.spotify.com/search/gul%20anuv%20jain", "spotify_id": ""}, {"id": 417, "title": "Riha", "artist": "Anuv Jain", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2733f0728f55894526094f777f9", "spotify_url": "https://open.spotify.com/search/riha%20anuv%20jain", "spotify_id": ""}, {"id": 418, "title": "Ocean", "artist": "Anuv Jain", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273702f7ba36ad382c93a733e1b", "spotify_url": "https://open.spotify.com/search/ocean%20anuv%20jain", "spotify_id": ""}, {"id": 419, "title": "Kasoor", "artist": "Prateek Kuhad", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273ae7abe97f7020d657e87bbec", "spotify_url": "https://open.spotify.com/search/kasoor%20prateek%20kuhad", "spotify_id": ""}, {"id": 420, "title": "Shaayad", "artist": "Prateek Kuhad", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2738f3130efdcff4a9ab52646db", "spotify_url": "https://open.spotify.com/search/shaayad%20prateek%20kuhad", "spotify_id": ""}, {"id": 421, "title": "Cold Mess", "artist": "Prateek Kuhad", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27313152e608c38da785bca4ac2", "spotify_url": "https://open.spotify.com/search/cold%20mess", "spotify_id": ""}, {"id": 422, "title": "Tune Kaha", "artist": "Prateek Kuhad", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2733214a3bb5d7728018acc90be", "spotify_url": "https://open.spotify.com/search/tune%20kaha", "spotify_id": ""}, {"id": 423, "title": "Oh Love", "artist": "Prateek Kuhad", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27300fe1b1daea6ee84f295277e", "spotify_url": "https://open.spotify.com/search/oh%20love%20prateek", "spotify_id": ""}, {"id": 424, "title": "100 Words", "artist": "Prateek Kuhad", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27313152e608c38da785bca4ac2", "spotify_url": "https://open.spotify.com/search/100%20words", "spotify_id": ""}, {"id": 425, "title": "Did You Know", "artist": "Prateek Kuhad", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273e98fb90ec2e15c005a0b6f7f", "spotify_url": "https://open.spotify.com/search/did%20you%20know", "spotify_id": ""}, {"id": 426, "title": "Aakhon Ke Kinare", "artist": "When Chai Met Toast", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27324a30df209f23a8ea4218bd7", "spotify_url": "https://open.spotify.com/search/aakhon%20ke%20kinare", "spotify_id": ""}, {"id": 427, "title": "Kahaani", "artist": "When Chai Met Toast", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27311c6f185418cc5197ba19d6e", "spotify_url": "https://open.spotify.com/search/kahaani", "spotify_id": ""}, {"id": 428, "title": "Nazar", "artist": "When Chai Met Toast", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27325b055377757b3cdd6f26b78", "spotify_url": "https://open.spotify.com/search/nazar", "spotify_id": ""}, {"id": 429, "title": "Jo Tum Mere Ho", "artist": "When Chai Met Toast", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273dfc3e610b745bc0e5dc47eaf", "spotify_url": "https://open.spotify.com/search/jo%20tum%20mere%20ho", "spotify_id": ""}, {"id": 430, "title": "Hope", "artist": "When Chai Met Toast", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27325b055377757b3cdd6f26b78", "spotify_url": "https://open.spotify.com/search/hope%20when%20chai", "spotify_id": ""}, {"id": 431, "title": "Baarishein", "artist": "Anuv Jain", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273d8ca783fa570b57e082f4374", "spotify_url": "https://open.spotify.com/search/baarishein%20anuv%20jain", "spotify_id": ""}, {"id": 432, "title": "Meri Baaton Mein", "artist": "Anuv Jain", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27349b147260e16e0cebd211dd1", "spotify_url": "https://open.spotify.com/search/meri%20baaton%20mein", "spotify_id": ""}, {"id": 433, "title": "Alag Aasmaan", "artist": "Anuv Jain", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2735d7a296e99b415bc012c03e3", "spotify_url": "https://open.spotify.com/search/alag%20aasmaan", "spotify_id": ""}, {"id": 434, "title": "Khudi", "artist": "The Local Train", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27373c6514b296e0b53dc7b75b3", "spotify_url": "https://open.spotify.com/search/khudi", "spotify_id": ""}, {"id": 435, "title": "Dil Mere", "artist": "The Local Train", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2738e001d2d4b55039b545d047e", "spotify_url": "https://open.spotify.com/search/dil%20mere%20local%20train", "spotify_id": ""}, {"id": 436, "title": "Liggi", "artist": "Ritviz", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273774767c26967fb25e7854305", "spotify_url": "https://open.spotify.com/search/liggi", "spotify_id": ""}, {"id": 437, "title": "Choo Lo", "artist": "The Local Train", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2738e001d2d4b55039b545d047e", "spotify_url": "https://open.spotify.com/search/choo%20lo", "spotify_id": ""}, {"id": 438, "title": "Aaftaab", "artist": "The Local Train", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27373c6514b296e0b53dc7b75b3", "spotify_url": "https://open.spotify.com/search/aaftaab", "spotify_id": ""}, {"id": 439, "title": "Jeet", "artist": "Ritviz", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273677c4cabe500b906c4a8e207", "spotify_url": "https://open.spotify.com/search/jeet%20ritviz", "spotify_id": ""}, {"id": 440, "title": "Meri Kahani", "artist": "The Local Train", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273d58b8f3516c3bd0d07a32455", "spotify_url": "https://open.spotify.com/search/meri%20kahani", "spotify_id": ""}, {"id": 441, "title": "KTMBK", "artist": "Zaeden", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273b773ac166f7458e2a910d452", "spotify_url": "https://open.spotify.com/search/ktmbk", "spotify_id": ""}, {"id": 442, "title": "Bars", "artist": "Zaeden", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273a30b0cf19d04d2bde289c504", "spotify_url": "https://open.spotify.com/search/bars%20zaeden", "spotify_id": ""}, {"id": 443, "title": "Thandi Hawa", "artist": "Ritviz", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273774767c26967fb25e7854305", "spotify_url": "https://open.spotify.com/search/thandi%20hawa", "spotify_id": ""}, {"id": 444, "title": "Gulabi Raat", "artist": "Dikshant", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273650ca2b67358f67a59f13c07", "spotify_url": "https://open.spotify.com/search/gulabi%20raat", "spotify_id": ""}, {"id": 445, "title": "Tera Nishaan", "artist": "Dikshant", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2731d308881d5347bae7fff57b1", "spotify_url": "https://open.spotify.com/search/tera%20nishaan", "spotify_id": ""}, {"id": 446, "title": "Udd Gaye", "artist": "Ritviz", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273677c4cabe500b906c4a8e207", "spotify_url": "https://open.spotify.com/search/udd%20gaye", "spotify_id": ""}, {"id": 447, "title": "Kyun", "artist": "Dikshant", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2737a2b2cbaa17b9e930f02e52b", "spotify_url": "https://open.spotify.com/search/kyun%20dikshant", "spotify_id": ""}, {"id": 448, "title": "City Lights", "artist": "Zaeden", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273f3aa0e6ca22a382007f61e4d", "spotify_url": "https://open.spotify.com/search/city%20lights%20zaeden", "spotify_id": ""}, {"id": 449, "title": "Savere", "artist": "Dikshant", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2737cd65a760f6f6614cc66c1d5", "spotify_url": "https://open.spotify.com/search/savere%20dikshant", "spotify_id": ""}, {"id": 450, "title": "Sage", "artist": "Ritviz", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273677c4cabe500b906c4a8e207", "spotify_url": "https://open.spotify.com/search/sage%20ritviz", "spotify_id": ""}, {"id": 451, "title": "Raaton", "artist": "Aditya Rikhari", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2738d39747ce667154625a06bc5", "spotify_url": "https://open.spotify.com/search/raaton", "spotify_id": ""}, {"id": 452, "title": "Paaro", "artist": "Aditya Rikhari", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27390c6e25ed80fd8a70c71e921", "spotify_url": "https://open.spotify.com/search/paaro", "spotify_id": ""}, {"id": 453, "title": "Dhundhla", "artist": "Dikshant", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273531cec6b022e44d52a5d92d2", "spotify_url": "https://open.spotify.com/search/dhundhla", "spotify_id": ""}, {"id": 454, "title": "Maan Meri Jaan", "artist": "King", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27330df39c606346d677f7c4443", "spotify_url": "https://open.spotify.com/search/maan%20meri%20jaan", "spotify_id": ""}, {"id": 455, "title": "Tu Aake Dekhle", "artist": "King", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27399bc4786696a0bb07e60e0ca", "spotify_url": "https://open.spotify.com/search/tu%20aake%20dekhle", "spotify_id": ""}, {"id": 456, "title": "Tum Se Hi", "artist": "Mitraz", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2734a7f529e568e5561b57da1bc", "spotify_url": "https://open.spotify.com/search/tum%20se%20hi%20mitraz", "spotify_id": ""}, {"id": 457, "title": "Muskurahat", "artist": "Osho Jain", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27304985565ee6f3524fed50ebc", "spotify_url": "https://open.spotify.com/search/muskurahat%20osho", "spotify_id": ""}, {"id": 458, "title": "Aankhon Se Batana", "artist": "Dikshant", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27316fc8a384ed52ccb50d3b782", "spotify_url": "https://open.spotify.com/search/aankhon%20se%20batana", "spotify_id": ""}, {"id": 459, "title": "Farda", "artist": "Bayaan", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273978a2646f6165e9b4f9a2169", "spotify_url": "https://open.spotify.com/search/farda%20bayaan", "spotify_id": ""}, {"id": 460, "title": "Tera Mera Safar", "artist": "Mitraz", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273b65dd1f1f3a8b1888277ad0c", "spotify_url": "https://open.spotify.com/search/tera%20mera%20safar", "spotify_id": ""}, {"id": 461, "title": "Khwaab", "artist": "Bayaan", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2732321ddfd621340cc6312989e", "spotify_url": "https://open.spotify.com/search/khwaab%20bayaan", "spotify_id": ""}, {"id": 462, "title": "Elevated", "artist": "Shubh", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27303712fdb8fc3156aee9f85af", "spotify_url": "https://open.spotify.com/search/elevated%20shubh", "spotify_id": ""}, {"id": 463, "title": "Baller", "artist": "Shubh", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27352919a0cb296d317f6bbeebd", "spotify_url": "https://open.spotify.com/search/baller%20shubh", "spotify_id": ""}, {"id": 464, "title": "Woh Raat", "artist": "Osho Jain", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2735b0dfbaabd17ac4b09903065", "spotify_url": "https://open.spotify.com/search/woh%20raat", "spotify_id": ""}, {"id": 465, "title": "Brown Munde", "artist": "AP Dhillon", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273026c84c9b0f78f0abe71301f", "spotify_url": "https://open.spotify.com/search/brown%20munde", "spotify_id": ""}, {"id": 466, "title": "Excuses", "artist": "AP Dhillon", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2735b74e703d6ffb2ea16860c86", "spotify_url": "https://open.spotify.com/search/excuses%20ap%20dhillon", "spotify_id": ""}, {"id": 467, "title": "G.O.A.T.", "artist": "Diljit Dosanjh", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273e62ca3548e739bd85eebbbc9", "spotify_url": "https://open.spotify.com/search/goat%20diljit", "spotify_id": ""}, {"id": 468, "title": "No Love", "artist": "Shubh", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2732a46046339bd779f95a8cf8b", "spotify_url": "https://open.spotify.com/search/no%20love%20shubh", "spotify_id": ""}, {"id": 469, "title": "Lemonade", "artist": "Diljit Dosanjh", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273010ffee75fd78504689a7d33", "spotify_url": "https://open.spotify.com/search/lemonade%20diljit", "spotify_id": ""}, {"id": 470, "title": "Softly", "artist": "Karan Aujla", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273bf6c7c24a33a49a5c2f0d423", "spotify_url": "https://open.spotify.com/search/softly%20karan", "spotify_id": ""}, {"id": 471, "title": "White Brown Black", "artist": "Karan Aujla", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2739363e8444f972e628e87a610", "spotify_url": "https://open.spotify.com/search/white%20brown%20black", "spotify_id": ""}, {"id": 472, "title": "Kho Gaye", "artist": "Taaruk Raina", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27390853ed444266d1d2bb55c28", "spotify_url": "https://open.spotify.com/search/kho%20gaye", "spotify_id": ""}, {"id": 473, "title": "Noor", "artist": "Lost Stories", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273d47b01b1cd07cbeedd2ec64d", "spotify_url": "https://open.spotify.com/search/noor%20lost%20stories", "spotify_id": ""}, {"id": 474, "title": "Insane", "artist": "AP Dhillon", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273f26219080879cd317b98ece8", "spotify_url": "https://open.spotify.com/search/insane%20ap%20dhillon", "spotify_id": ""}, {"id": 475, "title": "Chaand Baaliyan", "artist": "Aditya A", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2734be3b1a83cd1a2edb28800fc", "spotify_url": "https://open.spotify.com/search/chaand%20baaliyan", "spotify_id": ""}, {"id": 476, "title": "Heer Ranjha", "artist": "Rito Riba", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b27337bd92787c510d6ab441ca19", "spotify_url": "https://open.spotify.com/search/heer%20ranjha", "spotify_id": ""}, {"id": 477, "title": "Tum Hi Ho", "artist": "Arijit Singh", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2736404721c1943d5069f0805f3", "spotify_url": "https://open.spotify.com/search/tum%20hi%20ho", "spotify_id": ""}, {"id": 478, "title": "Tu Hai Kahan", "artist": "AUR", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b2731a6f263b98cd4afe288c7946", "spotify_url": "https://open.spotify.com/search/tu%20hai%20kahan", "spotify_id": ""}, {"id": 479, "title": "Fikar", "artist": "Aditya Rikhari", "year": null, "album": null, "cover_url": "https://i.scdn.co/image/ab67616d0000b273aff8aa045edf1c2925b91f8a", "spotify_url": "https://open.spotify.com/search/fikar", "spotify_id": ""}];
+
+// ─── PERSISTENT SAVES ───
+const API = 'http://localhost:3000';
+let UID = localStorage.getItem('indiefy_uid');
+if (!UID) {
+  UID = (crypto.randomUUID ? crypto.randomUUID() : 'u-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+  localStorage.setItem('indiefy_uid', UID);
+}
+let saved = JSON.parse(localStorage.getItem('indiefy_FINAL') || '[]');
+(async () => {
+  try {
+    const r = await fetch(API + '/api/saves', { headers: { 'X-Indiefy-UID': UID } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const fromServer = await r.json();
+    if (Array.isArray(fromServer)) {
+      saved = fromServer;
+      localStorage.setItem('indiefy_FINAL', JSON.stringify(saved));
+      if (document.getElementById('library').classList.contains('active')) renderLibSaved();
+      if (document.getElementById('room').classList.contains('active')) renderRoom();
+    }
+  } catch (e) { console.warn('Server sync failed:', e.message); }
+})();
+async function apiSave(song) {
+  try {
+    await fetch(API + '/api/saves', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Indiefy-UID': UID },
+      body: JSON.stringify(song)
+    });
+  } catch (e) { console.warn('Save failed:', e.message); }
+}
+async function apiUnsave(song) {
+  try {
+    await fetch(API + '/api/saves', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'X-Indiefy-UID': UID },
+      body: JSON.stringify(song)
+    });
+  } catch (e) { console.warn('Unsave failed:', e.message); }
+}
+
+// ─── STATE ───
+let activeSong=null,curIdx=0,playing=false,scPlaying=false;
+let dragging=null,dragSong=null,dragStarted=false,ttSongUrl='';
+let rainOn=false,rainCtx,rainDrops=[];
+const audio=document.getElementById('audio-el');
+const scAudio=new Audio();
+const prevCache={};
+
+const NAV={sky:'sky-nav',library:'lib-nav',room:'room-nav'};
+function go(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',['sky','library','room'][i]===id));
+  document.getElementById('main-nav').className=NAV[id]||'';
+  if(id==='sky')initSky();
+  if(id==='library'){initLib();renderLibSaved()}
+  if(id==='room'){initRoom();renderRoom()}
+}
+document.getElementById('main-nav').className='sky-nav';
+
+/* ─── SKY (FAST) ─── */
+let skyDone=false;
+function initSky(){
+  if(skyDone)return;skyDone=true;
+  const cv=document.getElementById('sky-canvas'),ctx=cv.getContext('2d'),sec=document.getElementById('sky');
+  function rsz(){cv.width=window.innerWidth;cv.height=window.innerHeight-60}rsz();window.addEventListener('resize',rsz);
+  const bgS=Array.from({length:280},()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.5+0.2,ph:Math.random()*Math.PI*2,spd:0.3+Math.random()*1.8,h:Math.random()<0.5?[133,124,145]:[248,204,170]}));
+  let sh=null;function ls(){sh={x:Math.random()*0.5,y:Math.random()*0.28,life:0};setTimeout(ls,4000+Math.random()*7000)}setTimeout(ls,1600);
+  function frame(t){
+    const W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+    const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#050408');g.addColorStop(0.5,'#0D0B12');g.addColorStop(1,'#181424');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    for(const s of bgS){const a=0.25+0.75*(0.5+0.5*Math.sin(t*s.spd*0.001+s.ph));ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(${s.h[0]},${s.h[1]},${s.h[2]},${a})`;ctx.fill();}
+    if(sh){sh.life+=0.016;sh.x+=0.003;sh.y+=0.0008;const al=Math.max(0,1-sh.life/1.5),sx=sh.x*W,sy=sh.y*H;const tr=ctx.createLinearGradient(sx-100,sy-26,sx,sy);tr.addColorStop(0,'rgba(248,204,170,0)');tr.addColorStop(1,`rgba(248,204,170,${al})`);ctx.beginPath();ctx.moveTo(sx-100,sy-26);ctx.lineTo(sx,sy);ctx.strokeStyle=tr;ctx.lineWidth=1.5;ctx.stroke();if(sh.life>1.8)sh=null}
+    requestAnimationFrame(frame);
+  }requestAnimationFrame(frame);
+  // NOTE: removed the per-pixel mousemove glow loop for speed
+  SONGS.forEach((song,i)=>{
+    const d=document.createElement('div');d.className='song-dot';const sz=2+Math.random()*3;
+    d.style.cssText=`width:${sz}px;height:${sz}px;left:${5+Math.random()*90}%;top:${5+Math.random()*88}%`;
+    d.addEventListener('mouseenter',e=>{d.classList.add('lit');showCard(e,song,i)});
+    d.addEventListener('mouseleave',()=>{d.classList.remove('lit');setTimeout(()=>{if(!document.getElementById('sCard').matches(':hover'))hideCard()},80)});
+    sec.appendChild(d);
+  });
+}
+function showCard(e,song,idx){
+  activeSong={song,idx};
+  document.getElementById('scImg').src=song.cover_url||'';
+  document.getElementById('scTitle').textContent=song.title;
+  document.getElementById('scArtist').textContent=song.artist;
+  document.getElementById('scYear').textContent=song.year||'';
+  scAudio.pause();scAudio.src='';scPlaying=false;
+  document.getElementById('scPBtn').textContent='▶ Preview';
+  document.getElementById('scPF').style.width='0%';document.getElementById('scPT').textContent='0:00';
+  posCard(e);document.getElementById('sCard').classList.add('show');
+  fetchPrev(song).then(url=>{if(url)scAudio.src=url;else document.getElementById('scPBtn').textContent='No preview'});
+}
+function hideCard(){scAudio.pause();scPlaying=false;document.getElementById('scPBtn').textContent='▶ Preview';document.getElementById('sCard').classList.remove('show')}
+function posCard(e){const c=document.getElementById('sCard');let x=e.clientX+18,y=e.clientY-80;if(x+234>window.innerWidth)x=e.clientX-252;if(y<8)y=8;if(y+430>window.innerHeight)y=window.innerHeight-430;c.style.left=x+'px';c.style.top=y+'px'}
+document.getElementById('sCard').addEventListener('mouseleave',hideCard);
+function scToggle(){if(!scAudio.src)return;if(scPlaying){scAudio.pause();scPlaying=false;document.getElementById('scPBtn').textContent='▶ Preview'}else{scAudio.play();scPlaying=true;document.getElementById('scPBtn').textContent='⏸ Pause'}}
+scAudio.addEventListener('timeupdate',()=>{const d=scAudio.duration||30,c=scAudio.currentTime||0;document.getElementById('scPF').style.width=(c/d*100)+'%';document.getElementById('scPT').textContent=fmt(c)});
+scAudio.addEventListener('ended',()=>{scPlaying=false;document.getElementById('scPBtn').textContent='▶ Preview'});
+function scSeek(e){const b=document.getElementById('scPB');scAudio.currentTime=(scAudio.duration||30)*Math.max(0,Math.min(1,(e.clientX-b.getBoundingClientRect().left)/b.offsetWidth))}
+
+async function fetchPrev(song){
+  const k=song.id||song.title;
+  if(prevCache[k]!==undefined)return prevCache[k];
+  try{
+    const params=new URLSearchParams({songId:song.id||'',title:song.title,artist:song.artist||''});
+    const r=await fetch(API+'/api/preview-cached?'+params);
+    const d=await r.json();
+    prevCache[k]=d.preview||null;
+    return prevCache[k];
+  }catch(e){return null}
+}
+
+function doSave(){
+  if(!activeSong)return;const s=activeSong.song;
+  if(!saved.find(x=>x.title===s.title&&x.artist===s.artist)){saved.push(s);persist();apiSave(s)}
+  showToast('🖼 '+s.title+' pinned to your room');
+  const b=document.querySelector('.sc-save');b.textContent='✓ Pinned!';b.style.color='#98A086';
+  setTimeout(()=>{b.textContent='♡ Save as Poster';b.style.color=''},1800);
+  if(document.getElementById('room').classList.contains('active'))renderRoom();
+}
+function doSpotify(){if(activeSong&&activeSong.song.spotify_url)window.open(activeSong.song.spotify_url,'_blank')}
+function persist(){localStorage.setItem('indiefy_FINAL',JSON.stringify(saved))}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
+function fmt(s){const m=Math.floor(s/60),ss=Math.floor(s%60);return m+':'+(ss<10?'0':'')+ss}
+
+/* ─── LIBRARY ─── */
+const BCOLS=['#3D1E0E','#1E2E3A','#1E3020','#2C2010','#24182E','#1A2E24'];
+const BLAB=['Indie','Shoegaze','Dream Pop','Lo-fi','Ambient','Post-rock','Soul','Bedroom','Alt','Jazz'];
+const DECS=['🕯️','📻','🏺','🪆','🎭','📜'];
+let libDone=false;
+function initLib(){
+  if(libDone)return;libDone=true;
+  buildShelves();setupDrag();
+  audio.addEventListener('timeupdate',updateProg);
+  audio.addEventListener('ended',()=>{playing=false;document.getElementById('playBtn').textContent='▶';document.getElementById('ttP').classList.remove('on');document.getElementById('tonearm').classList.remove('on')});
+}
+function buildShelves(){
+  const cont=document.getElementById('shelfCont');
+  appendFloor(cont,0,115);
+  const rail=document.createElement('div');rail.className='shelf-rail';
+  const bar=document.createElement('div');bar.className='shelf-rail-bar';rail.appendChild(bar);
+  for(let i=0;i<42;i++){const p=document.createElement('div');p.className='shelf-rail-post';p.style.left=(i*2.38)+'%';rail.appendChild(p)}
+  const lbl=document.createElement('div');lbl.className='shelf-rail-label';lbl.textContent='— Ground Floor —';rail.appendChild(lbl);
+  cont.appendChild(rail);
+  appendFloor(cont,115,SONGS.length);
+}
+function appendFloor(cont,start,end){
+  let si=start;
+  while(si<end){
+    const row=document.createElement('div');row.className='s-row';
+    if(Math.random()<0.4){const c=document.createElement('div');c.className='s-col';row.appendChild(c)}
+    let count=0,max=13+Math.floor(Math.random()*4);
+    while(count<max&&si<end){
+      const r=Math.random();
+      if(r<0.04&&count>1){const p=document.createElement('div');p.className='s-item';p.innerHTML=`<div class="dec-item">${DECS[Math.floor(Math.random()*DECS.length)]}</div>`;row.appendChild(p);count++}
+      else if(r<0.28){
+        const nb=1+Math.floor(Math.random()*2);
+        for(let b=0;b<nb&&count<max;b++){const bh=72+Math.floor(Math.random()*40),bw=13+Math.floor(Math.random()*9);const p=document.createElement('div');p.className='s-item';p.innerHTML=`<div class="book-s" style="width:${bw}px;height:${bh}px;background:${BCOLS[(si+b)%BCOLS.length]}"><span>${BLAB[(si+b)%BLAB.length]}</span></div>`;row.appendChild(p);count++}
+        if(si<end&&count<max){addAlbum(row,SONGS[si]);si++;count++}
+      }else{addAlbum(row,SONGS[si]);si++;count++}
+    }
+    if(Math.random()<0.3){const c=document.createElement('div');c.className='s-col';row.appendChild(c)}
+    cont.appendChild(row);
+  }
+}
+function addAlbum(row,song){
+  const h=88+Math.floor(Math.random()*36);
+  const wrap=document.createElement('div');wrap.className='s-item';
+  const a=document.createElement('div');a.className='album-spine';a.style.height=h+'px';a.dataset.si=SONGS.indexOf(song);
+  a.innerHTML=`<img src="${song.cover_url}" style="height:${h}px" alt="${song.title}" onerror="this.style.display='none';this.parentElement.style.background='#1A1008'"/><div class="album-tip">${song.title}<span>${song.artist}</span></div>`;
+  wrap.appendChild(a);row.appendChild(wrap);
+}
+function setupDrag(){
+  let mx=0,my=0;
+  document.addEventListener('mousedown',e=>{
+    const as=e.target.closest('.album-spine');if(!as)return;
+    e.preventDefault();const si=parseInt(as.dataset.si);if(isNaN(si))return;
+    dragging=as;dragSong=SONGS[si];dragStarted=false;mx=e.clientX;my=e.clientY;as.style.opacity='0.4';
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    if(!dragStarted&&Math.hypot(e.clientX-mx,e.clientY-my)>4){
+      dragStarted=true;
+      document.getElementById('dgImg').src=dragSong.cover_url||'';
+      document.getElementById('dragG').classList.add('on');
+      document.body.classList.add('is-dragging');
+    }
+    if(dragStarted){
+      const g=document.getElementById('dragG');g.style.left=e.clientX+'px';g.style.top=e.clientY+'px';
+      const tt=document.getElementById('turntable').getBoundingClientRect();
+      document.getElementById('turntable').classList.toggle('hl',e.clientX>tt.left&&e.clientX<tt.right&&e.clientY>tt.top&&e.clientY<tt.bottom);
+    }
+  });
+  document.addEventListener('mouseup',e=>{
+    if(!dragging)return;dragging.style.opacity='';
+    document.getElementById('dragG').classList.remove('on');
+    document.getElementById('turntable').classList.remove('hl');
+    document.body.classList.remove('is-dragging');
+    if(dragStarted){
+      const tt=document.getElementById('turntable').getBoundingClientRect();
+      if(e.clientX>tt.left&&e.clientX<tt.right&&e.clientY>tt.top&&e.clientY<tt.bottom&&dragSong){
+        loadTrack(SONGS.indexOf(dragSong));
+      }
+    }
+    dragging=null;dragSong=null;dragStarted=false;
+  });
+}
+function loadTrack(idx){
+  curIdx=idx;const song=SONGS[idx];
+  document.getElementById('ttSong').textContent=song.title;document.getElementById('ttArt').textContent=song.artist;
+  document.getElementById('ttImg').src=song.cover_url||'';document.getElementById('ttImg').style.display='block';document.getElementById('ttPh').style.display='none';
+  ttSongUrl=song.spotify_url||'';const sp=document.getElementById('ttSpot');if(ttSongUrl)sp.classList.add('on');else sp.classList.remove('on');
+  fetchPrev(song).then(url=>{if(url){audio.src=url;audio.play();playing=true;document.getElementById('playBtn').textContent='⏸';document.getElementById('ttP').classList.add('on');document.getElementById('tonearm').classList.add('on');document.getElementById('ttBadge').classList.add('on')}else{document.getElementById('ttSong').textContent=song.title+' (no preview)'}});
+}
+function ttToggle(){if(!audio.src)return;if(playing){audio.pause();playing=false;document.getElementById('playBtn').textContent='▶';document.getElementById('ttP').classList.remove('on');document.getElementById('tonearm').classList.remove('on')}else{audio.play();playing=true;document.getElementById('playBtn').textContent='⏸';document.getElementById('ttP').classList.add('on');document.getElementById('tonearm').classList.add('on')}}
+function ttPrev(){loadTrack((curIdx-1+SONGS.length)%SONGS.length)}
+function ttNext(){loadTrack((curIdx+1)%SONGS.length)}
+function updateProg(){const d=audio.duration||30,c=audio.currentTime||0;document.getElementById('pFill').style.width=(c/d*100)+'%';document.getElementById('ttCur').textContent=fmt(c);document.getElementById('ttDur').textContent=fmt(d)}
+function seekTo(e){const b=document.getElementById('pBar');audio.currentTime=(audio.duration||30)*Math.max(0,Math.min(1,(e.clientX-b.getBoundingClientRect().left)/b.offsetWidth))}
+function ttOpenSpot(){if(ttSongUrl)window.open(ttSongUrl,'_blank')}
+function ttSave(){
+  if(curIdx<0||curIdx>=SONGS.length)return;const s=SONGS[curIdx];
+  if(!saved.find(x=>x.title===s.title&&x.artist===s.artist)){saved.push(s);persist();apiSave(s)}
+  showToast('◎ '+s.title+' saved to vinyl shelf');
+  const b=document.querySelector('.tt-ab.save');b.textContent='✓ Added!';b.style.color='#98A086';
+  setTimeout(()=>{b.textContent='♡ Save to Vinyl Shelf';b.style.color=''},1800);
+  renderLibSaved();if(document.getElementById('room').classList.contains('active'))renderRoom();
+}
+function renderLibSaved(){
+  const w=document.getElementById('libSaved');
+  if(!saved.length){w.innerHTML='<div class="lib-saved-empty">Save songs to build your collection</div>';return}
+  const rc=['#A37C76','#4E5A46','#8FA1B2','#C4A071','#A76D5E','#D9B382','#98A086','#525871'];
+  w.innerHTML=saved.map((s,i)=>`<div class="lib-vinyl-saved" title="${s.title}" onclick="if(event.target.tagName!=='BUTTON')window.open('${s.spotify_url}','_blank')"><div class="lib-vinyl-lbl" style="background:${rc[i%rc.length]}"><img src="${s.cover_url}" alt="" onerror="this.style.display='none'"/></div><button class="rm-del-btn" onclick="event.stopPropagation();removeSave('${escapeAttr(s.title)}','${escapeAttr(s.artist)}')" title="Remove">×</button></div>`).join('');
+}
+function escapeAttr(s){return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}
+
+/* ─── ROOM ─── */
+let roomDone=false;
+function initRoom(){
+  if(roomDone)return;roomDone=true;
+  renderRoom();
+  audio.addEventListener('play',updateNP);
+  audio.addEventListener('pause',updateNP);
+  audio.addEventListener('ended',()=>document.getElementById('rmNP').classList.remove('show'));
+}
+function updateNP(){
+  if(!SONGS[curIdx])return;
+  const s=SONGS[curIdx];
+  const card=document.getElementById('rmNP');
+  if(!audio.paused){
+    document.getElementById('rmNPImg').src=s.cover_url||'';
+    document.getElementById('rmNPSong').textContent=s.title;
+    document.getElementById('rmNPArtist').textContent=s.artist;
+    document.getElementById('rmNPSpot').dataset.url=s.spotify_url||'';
+    card.classList.add('show');
+  } else { card.classList.remove('show'); }
+}
+function rmOpenSpot(){const url=document.getElementById('rmNPSpot').dataset.url;if(url)window.open(url,'_blank');}
+function renderRoom(){renderPosters();renderVinyls();renderSavedGrid()}
+
+const PROTS=[-2.8,1.5,-1.9,2.3,-3.1,1.7,-1.1,2.1,-0.8,2.5,-2.3,1.2,-1.6,0.7,-2.1,1.9];
+const PSIZES=[[82,102],[70,88],[76,94],[66,82],[80,100],[68,86],[74,92],[64,80]];
+const PPIN=[true,false,false,true,false,false,true,false,true,false,false,true,false,true,false,false];
+
+function renderPosters(){
+  const gal=document.getElementById('rmGal');gal.innerHTML='';
+  if(!saved.length){
+    gal.innerHTML = '<div class="rm-gal-empty">Save songs from ✦ Sky — they appear as posters on your wall</div>';
+    return;
+  }
+  saved.forEach((s,i)=>{
+    const[w,h]=PSIZES[i%PSIZES.length],rot=PROTS[i%PROTS.length];
+    const wrap=document.createElement('div');wrap.className='rm-poster';
+    wrap.style.transform=`rotate(${rot}deg)`;wrap.style.width=w+'px';
+    wrap.onclick=(ev)=>{if(ev.target.tagName==='BUTTON')return;if(s.spotify_url)window.open(s.spotify_url,'_blank')};
+    wrap.title=s.title;
+    const fast=document.createElement('div');
+    if(PPIN[i%PPIN.length])fast.className='rm-pin';
+    else fast.innerHTML='<div class="rm-tape tl"></div><div class="rm-tape tr"></div>';
+    wrap.appendChild(fast);
+    const img=document.createElement('img');img.src=s.cover_url;img.alt=s.title;
+    img.style.width=w+'px';img.style.height=h+'px';
+    img.onerror=function(){this.style.background='linear-gradient(135deg,#A37C76,#3D2B1F)'};
+    wrap.appendChild(img);
+    const cap=document.createElement('div');cap.className='rm-pcap';
+    cap.textContent=s.title.length>16?s.title.slice(0,14)+'…':s.title;
+    wrap.appendChild(cap);
+    const btn=document.createElement('button');
+    btn.className='rm-del-btn';btn.textContent='×';btn.title='Remove';
+    btn.onclick=(ev)=>{ev.stopPropagation();removeSave(s.title,s.artist)};
+    wrap.appendChild(btn);
+    gal.appendChild(wrap);
+  });
+}
+const VCOLS=['#A37C76','#4E5A46','#8FA1B2','#C4A071','#A76D5E','#D9B382'];
+function renderVinyls(){
+  const recs=document.getElementById('rmVR');
+  if(!saved.length){recs.innerHTML='<div class="rm-vs-empty">Save songs from ◎ Library</div>';return}
+  recs.innerHTML=saved.slice(0,6).map((s,i)=>`
+    <div class="rm-vs-rec" title="${s.title}" onclick="if(event.target.tagName!=='BUTTON')window.open('${s.spotify_url}','_blank')">
+      <div class="rm-vs-lbl" style="background:${VCOLS[i%VCOLS.length]}">
+        <img src="${s.cover_url}" alt="" onerror="this.style.display='none'"/>
+      </div>
+      <button class="rm-del-btn" onclick="event.stopPropagation();removeSave('${escapeAttr(s.title)}','${escapeAttr(s.artist)}')" title="Remove">×</button>
+    </div>
+  `).join('');
+}
+function renderSavedGrid(){
+  const grid=document.getElementById('rmSavedGrid');
+  if(!saved.length){grid.innerHTML='<div class="rm-saved-empty-msg">Nothing saved yet.</div>';return}
+  grid.innerHTML='<div class="rm-saved-grid">'+saved.map(s=>`
+    <div class="rm-saved-item" onclick="if(event.target.tagName!=='BUTTON')window.open('${s.spotify_url}','_blank')">
+      <img src="${s.cover_url}" alt="${s.title}" onerror="this.style.display='none'"/>
+      <div class="rm-saved-name">${s.title.length>14?s.title.slice(0,12)+'…':s.title}</div>
+      <div class="rm-saved-artist">${s.artist.length>12?s.artist.slice(0,10)+'…':s.artist}</div>
+      ${s.spotify_url?'<span class="rm-saved-spot">↗ Spotify</span>':''}
+      <button class="rm-del-btn" onclick="event.stopPropagation();removeSave('${escapeAttr(s.title)}','${escapeAttr(s.artist)}')" title="Remove">×</button>
+    </div>
+  `).join('')+'</div>';
+}
+
+// Remove a save from both server + localStorage (2A: removes from both views)
+async function removeSave(title, artist){
+  const idx = saved.findIndex(x => x.title === title && x.artist === artist);
+  if (idx === -1) return;
+  const song = saved[idx];
+  saved.splice(idx, 1);
+  persist();
+  renderLibSaved();
+  renderRoom();
+  await apiUnsave(song);
+  showToast('🗑 '+song.title+' removed');
+}
+
+/* ─── RAIN ─── */
+function toggleRain(){
+  rainOn=!rainOn;const c=document.getElementById('rain-c');c.classList.toggle('on',rainOn);
+  document.getElementById('rainBtn').textContent=rainOn?'☀ Clear':'🌧 Rain';
+  if(rainOn){c.width=window.innerWidth;c.height=window.innerHeight;rainCtx=c.getContext('2d');rainDrops=Array.from({length:160},()=>({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,spd:5+Math.random()*8,len:10+Math.random()*22,a:0.06+Math.random()*0.14}));animRain()}
+}
+function animRain(){
+  if(!rainOn)return;const c=document.getElementById('rain-c');rainCtx.clearRect(0,0,c.width,c.height);
+  rainDrops.forEach(d=>{rainCtx.beginPath();rainCtx.moveTo(d.x,d.y);rainCtx.lineTo(d.x-1,d.y+d.len);rainCtx.strokeStyle=`rgba(175,205,225,${d.a})`;rainCtx.lineWidth=0.5;rainCtx.stroke();d.y+=d.spd;if(d.y>c.height){d.y=-d.len;d.x=Math.random()*c.width}});
+  requestAnimationFrame(animRain);
+}
+initSky();
+</script>
+</body>
+</html>
